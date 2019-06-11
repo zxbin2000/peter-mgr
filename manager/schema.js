@@ -237,7 +237,7 @@ function _procUpdate(sm, arg) {
             save += str;
         }
         else {
-            _run(new Buffer(save));
+            _run(Buffer.from(save));
         }
     };
 }

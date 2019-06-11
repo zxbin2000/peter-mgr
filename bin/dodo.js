@@ -106,7 +106,7 @@ function run() {
         }
         conf = _procconf('Serving', options ? options.conf : null);
         if (!mongoAddr) {
-            mongoAddr = conf.mongo ? conf.mongo : utils.mongoAddrFromEnv(basedir);
+            mongoAddr = conf.mongo ? conf.mongo : utils.mongoAddrFromConf();
         }
         _onExit = ppsrv.callExit;
         app = ppsrv.setup(peter, what, basedir, '40mb', options.no_default_inf);
@@ -152,7 +152,7 @@ function genPP(what) {
         eval(str);
     }
     catch (e) {
-        var file = process.cwd()+'/pp-gen-failed.js';
+        var file = process.cwd() + '/pp-gen-failed.js';
         fs.writeFileSync(file, str);
         console.log('JS generated at', file);
         throw e;

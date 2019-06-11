@@ -26,7 +26,7 @@
     ! $@ readEachSchema $=
 <-  (($? == 'Not existing') ? null : $?) 0
 <=  {{
-    var schema = Parser.parse(new Buffer(str));
+    var schema = Parser.parse(Buffer.from(str));
     assert(schema);
 
     var sch, each

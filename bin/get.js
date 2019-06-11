@@ -15,7 +15,7 @@ var Thenjs = require('thenjs');
 var fs = require('fs');
 var beautify = require('js-beautify').js_beautify;
 
-var mongoaddr = utils.mongoAddrFromEnv(__dirname);
+var mongoaddr = utils.mongoAddrFromConf();;
 var argv = utils.getRealArgv(__filename);
 
 if (argv.length < 2) {

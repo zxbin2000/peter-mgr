@@ -268,7 +268,7 @@ function _on(target, pnames, req, res, data) {
         function tranHtml(data, res, type) {
             if (data instanceof Buffer || 'string' == typeof data) {
                 if ('string' == typeof data) {
-                    data = new Buffer(data);
+                    data = Buffer.from(data);
                 }
                 res.setHeader('Content-Type', type ? type : 'text/html; charset=UTF-8');
                 res.setHeader('Content-Length', data.length);
@@ -334,7 +334,7 @@ function _on(target, pnames, req, res, data) {
                 }
                 else {
                     /* safari等其他非主流浏览器只能自求多福了 */
-                    res.setHeader('Content-Disposition', 'attachment; filename=' + new Buffer(filename).toString('binary'));
+                    res.setHeader('Content-Disposition', 'attachment; filename=' + Buffer.from(filename).toString('binary'));
                 }
             }
             return res.end(file, 'binary', commonCallback);

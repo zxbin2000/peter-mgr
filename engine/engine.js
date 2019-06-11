@@ -1579,8 +1579,8 @@ function prepareSchema() {
     var code = '';
     if (g_parsed.schema.length) {
         var str = g_parsed.schema.join('\n');
-        schema = Parser.parse(new Buffer(str));
-        code = 'var __runtime_schema__ = Parser.parse(new Buffer(\'' + g_parsed.schema.join('\\n') + '\'));\n';
+        schema = Parser.parse(Buffer.from(str));
+        code = 'var __runtime_schema__ = Parser.parse(Buffer.from(\'' + g_parsed.schema.join('\\n') + '\'));\n';
     }
 
     for (var x in g_parsed.rules) {

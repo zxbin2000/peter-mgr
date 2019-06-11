@@ -7,7 +7,8 @@
     if (self.db) {
         $callback 'Already bound' null
     }
-    var opts = utils.copyObj({useNewUrlParser: true}, options);
+    var opts = options || {};
+    opts.useNewUrlParser = true;
     var client = new MongoClient(dbUrl, opts);
 }}
     client.connect
