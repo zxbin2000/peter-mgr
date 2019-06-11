@@ -7,11 +7,12 @@
     if (self.db) {
         $callback 'Already bound' null
     }
-    var client = new MongoClient(dbUrl, options);
+    var opts = utils.copyObj({useNewUrlParser: true}, options);
+    var client = new MongoClient(dbUrl, opts);
 }}
     client.connect
 =>  {{
-    self.db = $@;
+    self.db = $@.db();
 }}
     self.sm.loadFromDB self.db
 ;;
