@@ -15,7 +15,7 @@ schema = peter.sm;
 
 var Thenjs = require('thenjs');
 var readline = require('readline');
-var mongoaddr = utils.mongoAddrFromEnv(__dirname);
+var mongoaddr = utils.mongoAddrFromConf();
 
 function run(arg) {
     var rl = readline.createInterface({
@@ -91,22 +91,19 @@ function run(arg) {
         var arg = line.trim().split(' ');
         var cmd = arg.shift();
         onLine(cmd, arg);
-    })
-        .on('close', function () {
-            console.log('Have a nice day!');
-            process.exit(0);
-        });
+    }).on('close', function () {
+        console.log('Have a nice day!');
+        process.exit(0);
+    });
 }
 
 Thenjs(function (cont) {
     console.log("Fetching schemas...");
-    peter.bindDb(mongoaddr, cont);
-})
-.then(function(cont, arg) {
+    peter.bindDb(mongoaddr, {useNewUrlParser: true}, cont);
+}).then(function(cont, arg) {
     console.log("Okay, %d schema\nLoading index...", arg);
     index.init(peter, cont);
-})
-.then(function (cont, arg) {
+}).then(function (cont, arg) {
     console.log("Okay");
     if (process.argv.length > 2) {
         var args = Array.from(process.argv);
@@ -118,8 +115,7 @@ Thenjs(function (cont) {
         return run(args);
     }
     run();
-})
-.fail(function (cont, err, arg) {
+}).fail(function (cont, err, arg) {
     console.log(err.stack);
     console.error("Error: " + err);
     process.exit(-1);

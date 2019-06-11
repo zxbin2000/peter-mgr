@@ -11,7 +11,7 @@ var os = require('os');
 var strip = require('strip-comment');
 var jsonic = require('jsonic');
 var schedule = require('node-schedule');
-
+var config = require('config');
 
 function timeString(time, format) {
     if (undefined == format) {
@@ -351,6 +351,11 @@ function mongoAddrFromEnv(start_script_dir) {
     }
     console.log('Warning: env.json is not found in [' + dir + ']');
     return null;
+}
+
+// conf lookup from config/env.json
+function mongoAddrFromConf() {
+    return config.get('schema');
 }
 
 // !! need to be called with getRealArgv(__filename)
@@ -814,6 +819,7 @@ module.exports = {
     removeTailIf: removeTailIf,
 
     mongoAddrFromEnv: mongoAddrFromEnv,
+    mongoAddrFromConf: mongoAddrFromConf,
     getRealArgv: getRealArgv,
     safeWrite: safeWrite,
 
