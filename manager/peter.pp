@@ -7,9 +7,9 @@
     if (self.db) {
         $callback 'Already bound' null
     }
-    var client = new MongoClient();
+    var client = new MongoClient(dbUrl, options);
 }}
-    client.connect dbUrl options
+    client.connect
 =>  {{
     self.db = $@;
 }}

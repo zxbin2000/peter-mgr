@@ -1626,8 +1626,8 @@ function generate(file, shell) {
     str = generateFromString(str, shell, filename);
     if (str) {
         str = beautify(str);
-        if (g_parsed.options.save) {
-            fs.writeFileSync(filename+'-gen.js', str);
+        if (g_parsed.options.save == '1') {
+            fs.writeFileSync(filename + '-gen.js', str);
         }
     }
     return str;
