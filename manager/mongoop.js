@@ -58,7 +58,7 @@ function add(collection, docid, name, value, callback) {
     var inc = {};
     inc[name] = value;
 
-    runMongoCmd(collection, collection.findAndModify,
+    runMongoCmd(collection, collection.findOneAndUpdate,
         {_id: docid},
         [],
         {$inc: inc},
@@ -70,7 +70,7 @@ function add(collection, docid, name, value, callback) {
 
 function create(collection, json, callback) {
     assert(callback);
-    runMongoCmd(collection, collection.insert, json, callback);
+    runMongoCmd(collection, collection.insertOne, json, callback);
 }
 
 // fields can be an attribute name or an array of attributes
@@ -237,7 +237,7 @@ function set(collection, docid, json, options, callback) {
     else {
         cond = {_id: docid};
     }
-    runMongoCmd(collection, collection.update, cond, {$set: json}, options, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.n)
@@ -251,7 +251,7 @@ function replace(collection, docid, name, json, options, callback) {
     var cond = {_id: docid};
 
     cond[name] = {$exists: true};
-    runMongoCmd(collection, collection.update, cond, {$set: json}, options, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -265,7 +265,7 @@ function insert(collection, docid, name, json, options, callback) {
     var cond = {_id: docid};
 
     cond[name] = {$exists: false};
-    runMongoCmd(collection, collection.update, cond, {$set: json}, options, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -295,7 +295,7 @@ function remove(collection, docid, fields, callback) {
         break;
     }
 
-    runMongoCmd(collection, collection.update, cond, {$unset: unset}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$unset: unset}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -312,7 +312,7 @@ function pushList(collection, docid, listname, elem, upsert, callback) {
     cond['_id'] = docid;
     add[listname] = elem;
 
-    runMongoCmd(collection, collection.update, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.n)
@@ -332,7 +332,7 @@ function pushMap(collection, docid, setname, keyname, elem, upsert, callback) {
     cond['_id'] = docid;
     add[setname] = elem;
 
-    runMongoCmd(collection, collection.update, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
         if (null != err) {
             return callback(11000 == err.code ? "Already existed" : err, 0);
         }
@@ -352,7 +352,7 @@ function pushSet(collection, docid, setname, elem, upsert, callback) {
     cond['_id'] = docid;
     add[setname] = elem;
 
-    runMongoCmd(collection, collection.update, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
         if (null != err) {
             return callback(11000 == err.code ? "Already existed" : err, 0);
         }
@@ -376,7 +376,7 @@ function pop(collection, docid, setname, first, callback) {
     update[setname] = first ? -1 : 1;
     fields[setname] = 1;//{ '$slice': 1 };
     // !! bug in mongodb driver, can't accept $slice modifier
-    runMongoCmd(collection, collection.findAndModify, cond, [], {$pop: update}, {fields: fields}, function (err, arg) {
+    runMongoCmd(collection, collection.findOneAndUpdate, cond, [], {$pop: update}, {fields: fields}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
 
@@ -410,7 +410,7 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
         }
     }
 
-    runMongoCmd(collection, collection.update, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
@@ -428,7 +428,7 @@ function replaceSet(collection, docid, setname, old, _new, callback) {
     cond[setname] = {$in: [old], $ne: _new};
     update[setname + '.$'] = _new;
 
-    runMongoCmd(collection, collection.update, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
@@ -446,7 +446,7 @@ function removeSet(collection, docid, setname, value, callback) {
     cond[setname] = value;
     update[setname] = value;
 
-    runMongoCmd(collection, collection.update, cond, {$pull: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$pull: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -468,7 +468,7 @@ function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
     key[keyname] = keyvalue;
     update[setname] = key;
 
-    runMongoCmd(collection, collection.update, cond, {$pull: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$pull: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -495,7 +495,7 @@ function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callba
         }
     }
 
-    runMongoCmd(collection, collection.update, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
@@ -533,7 +533,7 @@ function removeElementsByCond(collection, docid, listname, cond, callback) {
     query['_id'] = docid;
     update[listname] = cond;
 
-    runMongoCmd(collection, collection.update, query, {$pull: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, query, {$pull: update}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.n)
@@ -625,7 +625,7 @@ function findAndModify(collection, filter, update, options, callback) { 
         && (!utils.isNull(update) || !utils.isNull(callback)) 
         , "Wrong parameters in query" 
     );  
-    runMongoCmd(collection, collection.findAndModify, filter, [], update,{upsert: options}, function (err, arg) { 
+    runMongoCmd(collection, collection.findOneAndUpdate, filter, [], update,{upsert: options}, function (err, arg) { 
         callback(err, null == err ? arg.value : arg); 
     }); 
 }
