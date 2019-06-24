@@ -60,9 +60,8 @@ function add(collection, docid, name, value, callback) {
 
     runMongoCmd(collection, collection.findOneAndUpdate,
         {_id: docid},
-        [],
         {$inc: inc},
-        {new: true, upsert: true, fields: inc},
+        {upsert: true, returnNewDocument: true, returnOriginal: false},
         function (err, arg) {
             callback(err, null == err ? arg.value : arg);
         });
