@@ -1321,31 +1321,109 @@ function query(collName, cond, options, callback) {
     });
 }
 
-function findAndModify(collName, filter, update,options, callback) {
+function findOne(collName, cond, options, callback) {
     var self = this;
     var collection = self.db.collection(collName);
-    if('boolean' != typeof(options)){
-      callback = options;
-      options = false;
+    if ('function' == typeof options) {
+        callback = options;
+        options = {};
     }
-    MongoOP.findAndModify(collection, filter, update,options, function (err, arg) { 
-        if (!err) { 
+    MongoOP.findOne(collection, cond, options, function (err, arg) {
+        if (!err && false!=options.unzip) {
             var n = 0;
             var sch = self.sm.getByName(collName);
-            for (var x in arg) { 
+            for (var x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
                         callback(null, arg);
                     }
                 });
-            } 
-            if (0 != n) 
-                return; 
-        } 
-        callback(err, arg); 
+            }
+            if (0 != n)
+                return;
+        }
+        callback(err, arg);
     });
- }
+}
+
+function findOneAndUpdate(collName, filter, update, options, callback) {
+    var self = this;
+    var collection = self.db.collection(collName);
+    if('function' == typeof(options)) {
+      callback = options;
+      options = {};
+    }
+    MongoOP.findOneAndUpdate(collection, filter, update, options, function (err, arg) {
+        if (!err) {
+            var n = 0;
+            var sch = self.sm.getByName(collName);
+            for (var x in arg) {
+                n ++;
+                Schema.unzipAny(sch, arg[x], function (err, ret) {
+                    if (--n == 0) {
+                        callback(null, arg);
+                    }
+                });
+            }
+            if (0 != n)
+                return;
+        }
+        callback(err, arg);
+    });
+}
+
+function findOneAndDelete(collName, filter, options, callback) {
+    var self = this;
+    var collection = self.db.collection(collName);
+    if('function' == typeof(options)) {
+      callback = options;
+      options = {};
+    }
+    MongoOP.findOneAndDelete(collection, filter, options, function (err, arg) {
+        if (!err) {
+            var n = 0;
+            var sch = self.sm.getByName(collName);
+            for (var x in arg) {
+                n ++;
+                Schema.unzipAny(sch, arg[x], function (err, ret) {
+                    if (--n == 0) {
+                        callback(null, arg);
+                    }
+                });
+            }
+            if (0 != n)
+                return;
+        }
+        callback(err, arg);
+    });
+}
+
+function findOneAndReplace(collName, filter, replacement, options, callback) {
+    var self = this;
+    var collection = self.db.collection(collName);
+    if('function' == typeof(options)) {
+      callback = options;
+      options = {};
+    }
+    MongoOP.findOneAndReplace(collection, filter, replacement, options, function (err, arg) {
+        if (!err) {
+            var n = 0;
+            var sch = self.sm.getByName(collName);
+            for (var x in arg) {
+                n ++;
+                Schema.unzipAny(sch, arg[x], function (err, ret) {
+                    if (--n == 0) {
+                        callback(null, arg);
+                    }
+                });
+            }
+            if (0 != n)
+                return;
+        }
+        callback(err, arg);
+    });
+}
 
 function aggregate(collName, cond, options, callback) {
     var self = this;
@@ -1371,7 +1449,7 @@ function aggregate(collName, cond, options, callback) {
                 return;
         }
         callback(err, arg);
-    })
+    });
 }
 
 function count(collName, cond, callback) {
@@ -1410,7 +1488,10 @@ Manager.prototype = {
                         // query and options can be an {} but not null
                         // default options is sort. you can also use fields, skip, limit, sort in options.
                         // ret: what specified in fields
-    findAndModify: findAndModify,
+    findOne: findOne,
+    findOneAndUpdate: findOneAndUpdate,
+    findOneAndReplace: findOneAndReplace,
+    findOneAndDelete: findOneAndDelete,
     set: set,           // args: pid, json, [options], callback
                         // json: {key: value[, key: value]}
     replace: replace,   // args: pid, name, value, callback

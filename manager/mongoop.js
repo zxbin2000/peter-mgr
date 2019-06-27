@@ -618,15 +618,47 @@ function query(collection, cond, options, callback) {
     runMongoCmd(cursor, cursor.toArray, callback);
 }
 
-function findAndModify(collection, filter, update, options, callback) { 
-    assert(!utils.isNull(collection) 
-        && !utils.isNull(filter) 
-        && (!utils.isNull(update) || !utils.isNull(callback)) 
-        , "Wrong parameters in query" 
-    );  
-    runMongoCmd(collection, collection.findOneAndUpdate, filter, [], update,{upsert: options}, function (err, arg) { 
-        callback(err, null == err ? arg.value : arg); 
-    }); 
+function findOne(collection, filter, options, callback) {
+    assert(!utils.isNull(collection)
+        && !utils.isNull(filter)
+        && (!utils.isNull(options) || !utils.isNull(callback))
+        , "Wrong parameters in query"
+    );
+    runMongoCmd(collection, collection.findOne, filter, options, callback);
+}
+
+function findOneAndUpdate(collection, filter, update, options, callback) {
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(filter) 
+        && (!utils.isNull(update) || !utils.isNull(callback)) 
+        , "Wrong parameters in query"
+    );
+    runMongoCmd(collection, collection.findOneAndUpdate, filter, update, options, function (err, arg) {
+        callback(err, null == err ? arg.value : arg);
+    });
+}
+
+function findOneAndDelete(collection, filter, options, callback) {
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(filter)
+        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        , "Wrong parameters in query"
+    );
+    runMongoCmd(collection, collection.findOneAndDelete, filter, options, function (err, arg) {
+        callback(err, null == err ? arg.value : arg);
+    });
+}
+
+function findOneAndReplace(collection, filter, replacement, options, callback) {
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(filter)
+        && !utils.isNull(replacement)
+        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        , "Wrong parameters in query"
+    );
+    runMongoCmd(collection, collection.findOneAndReplace, filter, replacement, options, function (err, arg) {
+        callback(err, null == err ? arg.value : arg);
+    });
 }
 
 function destroy(collection, cond, callback) {
@@ -660,7 +692,6 @@ function aggregate(collection, cond, options, callback) {
 // cond: { query condition }
 function count(collection, cond, callback) {
     assert(callback);
-
     runMongoCmd(collection, collection.count, cond, callback);
 }
 
@@ -672,7 +703,10 @@ module.exports = {
     manyGet: manyGet,
     getMany: getMany,
     query: query,
-    findAndModify: findAndModify,
+    findOne: findOne,
+    findOneAndUpdate: findOneAndUpdate,
+    findOneAndDelete: findOneAndDelete,
+    findOneAndReplace: findOneAndReplace,
     set: set,
     replace: replace,
     insert: insert,

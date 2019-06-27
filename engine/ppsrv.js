@@ -488,7 +488,6 @@ function setup(pm, what, basedir, limit, nodefault) {
     app.use(bodyParser.json({type: 'application/json', limit: limit}));
     app.use(bodyParser.urlencoded({extended: true}));
     app.use(cookieParser());
-    //设置跨域
     app.all('*', function(req, res, next) {
       res.header("Access-Control-Allow-Origin", req.headers.origin);
       res.header('Access-Control-Allow-Credentials', true);
