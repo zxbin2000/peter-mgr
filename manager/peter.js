@@ -280,24 +280,14 @@ function unzipAny(sch, arg, options, callback) {
 // fields is optional, it can be an attribute name or an array of attributes
 function get(pid, fields, options, callback) {
     var self = this;
-    if (undefined == callback) {
-        if (undefined == options) {
-            assert('function' == typeof fields);
-            callback = fields;
-            fields = null;
-            options = {};
-        }
-        else {
-            assert('function' == typeof options);
-            callback = options;
-            if (fields instanceof Array || 'string' == typeof fields) {
-                options = {};
-            }
-            else {
-                options = fields ? fields : {};
-                fields = null;
-            }
-        }
+    if ('function' == typeof fields) {
+        callback = fields;
+        fields = {};
+        options = {};
+    }
+    if ('function' == typeof options) {
+        callback = options;
+        options = {};
     }
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)

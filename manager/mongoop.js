@@ -86,8 +86,11 @@ function get(collection, docid, fields, callback) {
         break;
 
     case 'object':
+        var t = utils.isArray(fields);
         for (var x in fields) {
-            proj[fields[x]] = 1;
+            var k = t ? fields[x] : x;
+            var v = t ? 1 : fields[x];
+            proj[k] = v;
         }
         array = true;
         break;
@@ -97,11 +100,11 @@ function get(collection, docid, fields, callback) {
         break;
 
     default:
-        assert(false, 'wrong type of fields ' +typeof fields);
+        assert(false, 'wrong type of fields ' + typeof fields);
         break;
     }
-
-    runMongoCmd(collection, collection.findOne, query, proj, function (err, arg) {
+    var options = { projection: proj };
+    runMongoCmd(collection, collection.findOne, query, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (null == arg)

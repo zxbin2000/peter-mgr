@@ -49,6 +49,13 @@ function isNull(obj) {
     return obj == null || obj !== obj;
 }
 
+function isArray(object){
+    return  object && typeof object==='object' &&    
+        typeof object.length==='number' &&  
+        typeof object.splice==='function' &&    
+        !(object.propertyIsEnumerable('length'));
+}
+
 function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
 }
@@ -784,6 +791,7 @@ module.exports = {
     translateIntervalString: translateIntervalString,
     translateTimeSpan: translateTimeSpan,
 
+    isArray: isArray,
     isNull: isNull,                // 判断是否为空，废弃，建议使用underscore
     isEmpty: isEmpty,              // 判断是否为空值，废弃，建议使用underscore
     cmpObj: cmpObj,
