@@ -5,11 +5,13 @@ var Thenjs = require('thenjs');
 Thenjs(function(cont) {
     peter.bindDb('mongodb://localhost:27017/test', cont);
 }).then(function(cont, args) {
-    peter.get('@User.' + '5d1150980000024c06e2d8ce', ['avatar'], cont);
+    peter.count('@User', {}, cont);
 }).then(function(cont, args) {
     console.log('----', args);
+    process.exit(0);
 }).catch(function(cont, error) {
     console.log('====', error);
+    process.exit(0);
 });
 
 // Thenjs(function(cont) {

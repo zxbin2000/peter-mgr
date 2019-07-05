@@ -695,7 +695,7 @@ function aggregate(collection, cond, options, callback) {
 // cond: { query condition }
 function count(collection, cond, callback) {
     assert(callback);
-    runMongoCmd(collection, collection.count, cond, callback);
+    runMongoCmd(collection, collection.countDocuments, cond, callback);
 }
 
 module.exports = {
