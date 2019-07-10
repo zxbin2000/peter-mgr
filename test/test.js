@@ -5,7 +5,19 @@ var Thenjs = require('thenjs');
 Thenjs(function(cont) {
     peter.bindDb('mongodb://localhost:27017/test', cont);
 }).then(function(cont, args) {
-    peter.count('@User', {}, cont);
+    peter.findOne('@User', { is_deleted: false }, cont);
+}).then(function(cont, user) {
+    peter.findOneAndUpdate('@Follow', {
+        user_id: 1
+    }, {
+        $set: {
+            user_id: user._id,
+            update_time: new Date()
+        }
+    }, {
+        upsert: true,
+        returnOriginal: false
+    }, cont);
 }).then(function(cont, args) {
     console.log('----', args);
     process.exit(0);

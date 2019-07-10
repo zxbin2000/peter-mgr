@@ -69,6 +69,7 @@ function add(collection, docid, name, value, callback) {
 
 function create(collection, json, callback) {
     assert(callback);
+    
     runMongoCmd(collection, collection.insertOne, json, callback);
 }
 
@@ -572,27 +573,20 @@ function getElementsByRange(collection, docid, listname, range, callback) {
  * var options = {
  *    limit: 20,
  *    sort: {title: 1} | title, // default 1
- *    project: "field" | [ "field1", "field2"] | { field1: 1, field2: 1}
  *    skip: 10
  *    iterator: func
  * }
  */
 function query(collection, cond, options, callback) {
-    assert(callback);
+    if('function' == typeof options) {
+        callback = options;
+        options = {};
+    }
+    assert('function' == typeof callback);
 
     var project = {};
-    if (options && options.project) {
-        if ('string' == typeof options.project) {
-            project[options.project] = 1;
-        }
-        else if (options.project instanceof Array) {
-            for (var x in options.project) {
-                project[options.project[x]] = 1;
-            }
-        }
-        else {
-            project = options.project;
-        }
+    if (options && options.projection) {
+        project.projection = options.projection;
     }
     var cursor = collection.find(cond, project);
     if (options) {

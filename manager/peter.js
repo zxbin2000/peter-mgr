@@ -246,25 +246,19 @@ function _checkSchemaAndCallback(sm, pid, attrname, json, callback) {
     return [pid, attr, sch];
 }
 
-function destroy(pid, force, callback) {
-    var self = this;
-    if (undefined == callback) {
-        assert('function' == typeof force, 'Invalid parameters');
-        callback = force;
-        force = false;
+function destroy(pid, logical, callback) {
+    if('function' == typeof logical) {
+        callback = logical;
+        logical = false;
     }
+    assert('function' == typeof callback, 'Invalid parameters');
+
+    var self = this;
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
 
-    if (force) {
-        return MongoOP.destroy(_getCollection(self, pid), {'_id': pid}, callback);
-    }
-    // TODO::
-    process.nextTick(function () {
-        console.log("delay destroying ", pid);
-        callback(null, 0);
-    });
+    MongoOP.destroy(collName, { _id: pid }, callback);
 }
 
 function unzipAny(sch, arg, options, callback) {
@@ -1338,13 +1332,31 @@ function findOne(collName, cond, options, callback) {
 }
 
 function findOneAndUpdate(collName, filter, update, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
     if('function' == typeof(options)) {
       callback = options;
       options = {};
     }
-    MongoOP.findOneAndUpdate(collection, filter, update, options, function (err, arg) {
+    assert('object' == typeof filter, 'Invalid parameter: filter');
+    assert('object' == typeof update, 'Invalid parameter: update');
+    assert('function' == typeof callback, 'callback is not a function');
+    
+    var self = this;
+    var $set = update['$set'];
+    if($set) {
+        var sch = self.sm.validate(collName, $set);
+        if (null == sch) {
+            return process.nextTick(function () {
+                callback('Schema check error: ' + collName, null);
+            });
+        }
+        Schema.fillDefault(sch, $set);
+        var id = genPeterId(sch.__key__);
+        $set['_id'] = id;
+        $set['_schemaid'] = sch.__id__;
+        update['$set'] = $set;
+    }
+    MongoOP.findOneAndUpdate(self.db.collection(collName), filter, update, options, function (err, arg) {
+        console.log(err, arg);
         if (!err) {
             var n = 0;
             var sch = self.sm.getByName(collName);
