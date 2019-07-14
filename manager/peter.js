@@ -1342,7 +1342,7 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
     
     var self = this;
     var $set = update['$set'];
-    if($set) {
+    if($set && options.upsert) {
         var sch = self.sm.validate(collName, $set);
         if (null == sch) {
             return process.nextTick(function () {
@@ -1351,7 +1351,7 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
         }
         Schema.fillDefault(sch, $set);
         var id = genPeterId(sch.__key__);
-        $set['_id'] = id;
+        //$set['_id'] = id;
         $set['_schemaid'] = sch.__id__;
         update['$set'] = $set;
     }
