@@ -1356,7 +1356,6 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
         update['$set'] = $set;
     }
     MongoOP.findOneAndUpdate(self.db.collection(collName), filter, update, options, function (err, arg) {
-        console.log(err, arg);
         if (!err) {
             var n = 0;
             var sch = self.sm.getByName(collName);
