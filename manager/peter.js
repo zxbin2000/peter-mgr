@@ -1460,6 +1460,25 @@ function count(collName, cond, callback) {
     });
 }
 
+function distinct(collName, field, cond, options, callback) {
+    var self = this;
+    var collection = self.db.collection(collName);
+    if('function' == typeof(cond)) {
+        callback = cond;
+        cond = {};
+        options = {};
+    }
+    if('function' == typeof(options)) {
+      callback = options;
+      options = {};
+    }
+    assert('string' == typeof field, 'field is not string');
+    assert('function' == typeof callback, 'callback is not a function');
+    MongoOP.distinct(collection, field, cond, options, function (err, arg) {
+        callback(err, arg);
+    });
+}
+
 Manager.prototype = {
     bindDb: _bindDb,
 
@@ -1524,6 +1543,7 @@ Manager.prototype = {
 
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
+    distinct: distinct,     // args: collName, field, cond, options, callback
 
     isExpectedPeter: isExpectedPeter,         // args: pid name; return boolean
 

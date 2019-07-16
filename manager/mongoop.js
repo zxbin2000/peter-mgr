@@ -692,6 +692,18 @@ function count(collection, cond, callback) {
     runMongoCmd(collection, collection.countDocuments, cond, callback);
 }
 
+function distinct(collection, field, cond, options, callback) {
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(field)
+        && !utils.isNull(cond)
+        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        , "Wrong parameters in distinct"
+    );
+    runMongoCmd(collection, collection.distinct, field, cond, options, function (err, arg) {
+        callback(err, arg);
+    });
+}
+
 module.exports = {
     create: create,
     destroy: destroy,
@@ -724,5 +736,6 @@ module.exports = {
     getElementsByRange: getElementsByRange,
 
     aggregate: aggregate,
-    count: count
+    count: count,
+    distinct: distinct
 };
