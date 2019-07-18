@@ -14,6 +14,7 @@ var sprintf = require('sprintf-js').sprintf;
 var ascii = require('../utils/ascii');
 var MongoClient = require('mongodb').MongoClient;
 var pjson = require('../package.json');
+var _ = require('lodash');
 
 var VERSION = pjson.version;
 var _key;
@@ -1479,20 +1480,37 @@ function distinct(collName, field, cond, options, callback) {
     });
 }
 
-function findCursor(collName, cond, options, callback) {
+function findUnion(collName, field, cond, options, callback) {
+    assert('string' == typeof collName, 'collName is not string');
+    assert('string' == typeof field, 'field is not string');
+
     var self = this;
     var collection = self.db.collection(collName);
     if('function' == typeof(cond)) {
         callback = cond;
         cond = {};
-        options = {};
+        options = { limit: 25 };
     }
     if('function' == typeof(options)) {
         callback = options;
-        options = {};
+        options = { limit: 25 };
     }
+    var limit = options.limit || 25;
+    var result = [];
     MongoOP.findCursor(collection, cond, options, function (err, cursor) {
-        callback(err, cursor);
+        cursor.forEach(function(doc) {
+            if(result.length >= limit) {
+                cursor.close();
+                return;
+            }
+            var unionid = doc[field];
+            var index = _.findIndex(result, [field, unionid]);
+            if(index == -1) {
+                result.push(doc);
+            }
+        }, function() {
+            callback(null, result);
+        });
     });
 }
 
@@ -1561,7 +1579,7 @@ Manager.prototype = {
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
     distinct: distinct,     // args: collName, field, cond, options, callback
-    findCursor: findCursor, // args: collName, cond, option, callback
+    findUnion: findUnion,   // args: collName, field, cond, options, callback
 
     isExpectedPeter: isExpectedPeter,         // args: pid name; return boolean
 
