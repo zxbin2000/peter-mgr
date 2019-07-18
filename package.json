@@ -1,6 +1,6 @@
 {
   "name": "peter-mgr",
-  "version": "2.0.2-04",
+  "version": "2.0.2-05",
   "description": "peter manager",
   "main": "index.js",
   "scripts": {

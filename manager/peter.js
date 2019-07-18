@@ -1479,6 +1479,23 @@ function distinct(collName, field, cond, options, callback) {
     });
 }
 
+function findCursor(collName, cond, options, callback) {
+    var self = this;
+    var collection = self.db.collection(collName);
+    if('function' == typeof(cond)) {
+        callback = cond;
+        cond = {};
+        options = {};
+    }
+    if('function' == typeof(options)) {
+        callback = options;
+        options = {};
+    }
+    MongoOP.findCursor(collection, cond, options, function (err, cursor) {
+        callback(err, cursor);
+    });
+}
+
 Manager.prototype = {
     bindDb: _bindDb,
 
@@ -1544,6 +1561,7 @@ Manager.prototype = {
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
     distinct: distinct,     // args: collName, field, cond, options, callback
+    findCursor: findCursor, // args: collName, cond, option, callback
 
     isExpectedPeter: isExpectedPeter,         // args: pid name; return boolean
 

@@ -704,6 +704,16 @@ function distinct(collection, field, cond, options, callback) {
     });
 }
 
+function findCursor(collection, cond, options, callback) {
+    assert(!utils.isNull(collection)
+        && !utils.isNull(cond)
+        && (!utils.isNull(options) || !utils.isNull(callback))
+        , "Wrong parameters in findCursor"
+    );
+    var cursor = collection.find(cond, options);
+    callback(null, cursor);
+}
+
 module.exports = {
     create: create,
     destroy: destroy,
@@ -737,5 +747,6 @@ module.exports = {
 
     aggregate: aggregate,
     count: count,
-    distinct: distinct
+    distinct: distinct,
+    findCursor: findCursor
 };
