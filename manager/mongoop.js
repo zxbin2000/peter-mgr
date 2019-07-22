@@ -658,9 +658,10 @@ function findOneAndReplace(collection, filter, replacement, options, callback) {
     });
 }
 
-function destroy(collection, cond, callback) {
-    assert(callback);
-    runMongoCmd(collection, collection.deleteOne, cond, callback);
+function destroy(collection, filter, options, callback) {
+    assert('function' == typeof(callback), 'Invalid callback');
+
+    runMongoCmd(collection, collection.deleteOne, filter, options, callback);
 }
 
 // cond: [{stage}, {stage}]

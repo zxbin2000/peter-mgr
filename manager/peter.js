@@ -247,10 +247,10 @@ function _checkSchemaAndCallback(sm, pid, attrname, json, callback) {
     return [pid, attr, sch];
 }
 
-function destroy(pid, logical, callback) {
-    if('function' == typeof logical) {
-        callback = logical;
-        logical = false;
+function destroy(pid, options, callback) {
+    if('function' == typeof options) {
+        callback = options;
+        options = {};
     }
     assert('function' == typeof callback, 'Invalid parameters');
 
@@ -259,7 +259,10 @@ function destroy(pid, logical, callback) {
     if (null == pid)
         return;
 
-    MongoOP.destroy(collName, { _id: pid }, callback);
+    var self = this;
+    MongoOP.destroy(_getCollection(self, pid), { _id: pid }, options, function (err, arg) {
+        callback(err, null == err ? arg.result : arg);
+    });
 }
 
 function unzipAny(sch, arg, options, callback) {
