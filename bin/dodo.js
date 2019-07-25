@@ -20,7 +20,8 @@ try {
     DataStructure = require('../data_structure/_index');
     Exec = require('../utils/exec');
 } catch (e) {
-    let _peter = require('peter');
+    console.log('====', e);
+    let _peter = require('peter-mgr');
     peter = _peter.createManager();
     index = _peter.Index;
     utils = _peter.Utils;
@@ -224,7 +225,7 @@ function runPP(callback) {
     }
 }
 
-let exiting = false;
+var exiting = false;
 function prepareExit(code) {
     if (!exiting) {
         try {

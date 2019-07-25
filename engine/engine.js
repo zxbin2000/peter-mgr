@@ -1,3 +1,5 @@
+'use strict'
+
 let utils = require('../utils/utils');
 let Path = require('path');
 let assert = require('assert');
@@ -48,34 +50,31 @@ function translateResolve(param, what) {
     let level = 0;
     let done = false;
     let i;
-    for (i=what; i<param.length; i++) {
+    for (i = what; i < param.length; i++) {
         if ('(' == param[i]) {
             if (0 == level) {
                 param[i] = 'Path.resolve(';
             }
             level ++;
-        }
-        else if (')' == param[i]) {
+        } else if (')' == param[i]) {
             level --;
             if (0 == level) {
                 break;
             }
-        }
-        else if ('$$$' == param[i]) {
+        } else if ('$$$' == param[i]) {
             if (!done) {
                 param[i] = g_parsed.path ? ('\'' + Path.dirname(g_parsed.path) + '\',') : '\'.\',';
                 done = true;
-            }
-            else {
+            } else {
                 param.splice(i, 1);
                 i--;
             }
         }
     }
-    if (0!=level || i==param.length || i==what || !done) {
-        throw new Error('Wrong arguments for $resolve: '+param.slice(what, param.length-what).join(''));
+    if (0 != level || i == param.length || i == what || !done) {
+        throw new Error('Wrong arguments for $resolve: ' + param.slice(what, param.length - what).join(''));
     }
-    let str = param.splice(what+1, i-what+1).join('');
+    let str = param.splice(what + 1, i - what + 1).join('');
     return str;
 }
 
@@ -96,8 +95,8 @@ let g_TranslateTable = {
     '$resolve': translateResolve,
 
     '$include': function (param, what) {
-        assert(param.length >= what+2, 'Wrong parameters for $include');
-        let str = param.splice(what+1, param.length-what).join('');
+        assert(param.length >= what + 2, 'Wrong parameters for $include');
+        let str = param.splice(what + 1, param.length - what).join('');
         let filename = eval(str);
         assert(filename, 'Wrong filename for $include');
         let filePath = resolvePath(filename);
@@ -221,7 +220,7 @@ function checkFuncString(global, cond, param, isFunc) {
         //case '>':
             if (--level == 0) {
                 str = '';
-                for (let i = first; i <= x; i++) {
+                for (var i= first; i <= x; i++) {
                     //console.log("%d: %s, %s", i, param[i], str);
                     str += param[i];
                 }
@@ -281,7 +280,7 @@ function checkFuncString(global, cond, param, isFunc) {
         if (param[0] == '!') {    // execution in parallel
             cond.run = 'parallel';
             if (param.length <= 2) {
-                throw(new Error('No enough parameters for ! '+param[1]));
+                throw(new Error('No enough parameters for ! ' + param[1]));
             }
             param.shift();
             let c = param[0].charCodeAt(0);
@@ -290,7 +289,7 @@ function checkFuncString(global, cond, param, isFunc) {
                 param[0] = param[0].slice(1);
                 c = param[0].charCodeAt(0);
             }
-            if (c>=digitCode0 && c<=digitCode9) {
+            if (c >= digitCode0 && c <= digitCode9) {
                 cond.conctrl = parseInt(param[0]);
                 param.shift();
             }
@@ -358,7 +357,7 @@ function parseLine(line) {
     let slashCode = ascii['/'];
 
     function _match(str, from, len) {
-        let key5 = ['let ', 'var\t', 'new ', 'new\t', 'function ', 'function\t', 'typeof ', 'typeof\t'];
+        let key5 = ['let ', 'let\t', 'new ', 'new\t', 'function ', 'function\t', 'typeof ', 'typeof\t'];
         let key4 = [' in ', ' in\t', '\tin ', '\tin\t', ' of ', ' of\t', '\tof ', '\tof\t',
             ' instanceof ', ' instanceof\t', '\tinstanceof ', '\tinstanceof\t'];
         let key3 = ['<--'];
@@ -429,7 +428,7 @@ function parseLine(line) {
         , last = 0
         , n
         , blank_before = true;
-    for (let i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
         if (g_comment) {
             if (line.charCodeAt(i) == slashCode && expect == starCode) {
                 g_comment = false;
@@ -459,11 +458,11 @@ function parseLine(line) {
             _push(n - 500);
             continue;
         }
-        if (n<500 && n>=300) {
-            _push(n>=400 ? n-400 : 3);
+        if (n < 500 && n >= 300) {
+            _push(n >= 400 ? n - 400 : 3);
             continue;
         }
-        if (n<300 && n>=200) {
+        if (n < 300 && n >= 200) {
             if (n == 200) {   // '//'
                 break;        // skip all the following
             }
@@ -474,12 +473,12 @@ function parseLine(line) {
                 last = i + 1;
                 continue;
             }
-            if (n==203 && 0!=i) {   // if not leading ::, it may be var:type:mapped_name
+            if (n == 203 && 0 != i) {   // if not leading ::, it may be var:type:mapped_name
                 continue;
             }
 
-            if ((n==205 || n==209)
-                && (0!=i && line.substring(i-1, i)=='$' && !blank_before)
+            if ((n == 205 || n == 209)
+                && (0 != i && line.substring(i - 1, i) == '$' && !blank_before)
             ) {
                 _push(-2);
                 continue;
@@ -487,11 +486,11 @@ function parseLine(line) {
             _push(2);
             continue;
         }
-        if (105==n || 106==n) { // \t\space
+        if (105 == n || 106 == n) { // \t\space
             _push(0);
             last = i + 1;
 
-            if (!blank_before && slice.length && slice[slice.length-1]=='&&&') {
+            if (!blank_before && slice.length && slice[slice.length - 1] == '&&&') {
                 slice.pop();
             }
             blank_before = true;
@@ -506,14 +505,14 @@ function parseLine(line) {
             break;
 
         case 102:   // $
-            if (0!=i && '$'!=line.substring(i-1, i)) {
+            if (0 != i && '$' != line.substring(i - 1, i)) {
                 _push(0);
             }
             break;
 
         case 103:   // (
             _push(1);
-            if (0!=i && ascii.isIdentifier(line.substring(i-1, i))) {
+            if (0 != i && ascii.isIdentifier(line.substring(i - 1, i))) {
                 slice.push('$$$');
             }
             break;
@@ -521,10 +520,10 @@ function parseLine(line) {
         case 112:   // [
             _push(1);
             if (0 != i) {
-                if (ascii.isIdentifier(line.substring(i-1, i))
-                    || line.substring(i-2, i-1) == '$'
-                    || line.substring(i-1, i) == ']'
-                    || line.substring(i-1, i) == ')'
+                if (ascii.isIdentifier(line.substring(i - 1, i))
+                    || line.substring(i - 2, i - 1) == '$'
+                    || line.substring(i - 1, i) == ']'
+                    || line.substring(i - 1, i) == ')'
                 ) {
                     slice.push('$$$');
                 }
@@ -543,7 +542,7 @@ function parseLine(line) {
         //case 115:   // !
         case 108:   // .
         case 116:   // +
-            if (line.substring(i-1, i) == '$') {
+            if (line.substring(i - 1, i) == '$') {
                 _push(-1);
                 break;
             }
@@ -647,7 +646,6 @@ function parse() {
     function _checkAndProcessRule(rule, checkFailed) {
         for (let i = 0; i < rule.chains.length; i++) {
             let _chain = rule.chains[i];
-            //console.log(i, _chain);
             for (let x in _chain) {
                 if ('chainno' == x)
                     continue;
@@ -728,8 +726,7 @@ function parse() {
                 param[0] = '__x';
                 param.unshift('__arg');
                 param.unshift('_');
-            }
-            else {
+            } else {
                 let arr = param[0].split('/');
                 if (arr.length> 1) {
                     param[0] = arr.join('__');
@@ -747,14 +744,13 @@ function parse() {
         let proto = [{name: param[0], display: funcname}];
         let optarg = [];
 
-        for (let i=1; i<param.length; i++) {
+        for (let i = 1; i < param.length; i++) {
             let name = param[i];
             let arg = {display: name};
             if (name.substr(0, 1) == '?') {
                 name = name.substr(1);
                 arg.optional = true;
-            }
-            else if (optarg.length > 0) {
+            } else if (optarg.length > 0) {
                 throw new Error('Only the last parameters can be optional: ' + rule.target + ' @line ' + lineno);
             }
             if (name.substr(0, 1) == '=') {
@@ -766,8 +762,7 @@ function parse() {
                 name = name.substr(1);
                 if (name == '') {
                     name = '__http_cookies';
-                }
-                else {
+                } else {
                     name = name.toLowerCase();
                 }
                 arg.cookies = true;
@@ -776,8 +771,7 @@ function parse() {
                 name = name.substr(1);
                 if (name == '') {
                     name = '__http_files';
-                }
-                else {
+                } else {
                     name = name.toLowerCase();
                 }
                 arg.files = true;
@@ -786,8 +780,7 @@ function parse() {
                 name = name.substr(1);
                 if (name == '') {
                     name = '__http_headers';
-                }
-                else {
+                } else {
                     name = name.toLowerCase();
                 }
                 arg.headers = true;
@@ -796,8 +789,7 @@ function parse() {
                 name = name.substr(1);
                 if (name == '') {
                     name = '__http_request';
-                }
-                else {
+                } else {
                     name = name.toLowerCase();
                 }
                 arg.request = true;
@@ -847,10 +839,10 @@ function parse() {
         let rule = {embedded: true, target: param.join(' '), chains: [{}], rules: []};
 
         if (undefined == param || !checkFuncString(global, cond, param, true)) {
-            throw new Error('";;" Must be following a valid function. ' + param.join(' ') + ' @line ' + (lineno-1));
+            throw new Error('";;" Must be following a valid function. ' + param.join(' ') + ' @line ' + (lineno - 1));
         }
         if (!cond.ret) {
-            throw new Error('Embedded rule must start with "$return" or "$function". ' + param.join(' ') + ' @line ' + (lineno-1));
+            throw new Error('Embedded rule must start with "$return" or "$function". ' + param.join(' ') + ' @line ' + (lineno - 1));
         }
         rule.proto = cond;
         return rule;
@@ -863,7 +855,7 @@ function parse() {
                 return _error(sprintf('Not expected. "%s" %s', cmd, JSON.stringify(tran)));
             }
         }
-        //console.log("Proc %s, %s", cmd, action);
+        // console.log("Proc %s, %s", cmd, action);
         tran = trans[cmd];
         switch (action) {
             case 'CODE_BEGIN':
@@ -896,8 +888,8 @@ function parse() {
                 break;
 
             case 'CODE_}':
-                if ('}'!=param[0] && 'case'!=param[0] && 'default:'!=param[0] && 'default'!=param[0]) {
-                    let last = parent.rules[parent.rules.length-1];
+                if ('}' != param[0] && 'case' != param[0] && 'default:' != param[0] && 'default' != param[0]) {
+                    let last = parent.rules[parent.rules.length - 1];
                     if (last.proto.ret != 'function') {
                         return _error('No more code is allowed after a rule');
                     }
@@ -939,7 +931,7 @@ function parse() {
             case 'CHAIN':
                 chain = {chainno: chainno};
                 code = [];
-                cond = {lineno: lineno+1, code: code};
+                cond = {lineno: lineno + 1, code: code};
                 chain[cmd] = cond;
                 rule.chains.push(chain);
                 chainno ++;
@@ -954,12 +946,11 @@ function parse() {
             case 'RET':
                 if (chain.hasOwnProperty('->') || chain.hasOwnProperty('<-'))
                     return _error('Only one of "->" "<-" condition can be provided');
-            // else pass through
             case 'FINAL':
                 if (chain.hasOwnProperty('<--'))
                     return _error('Only one "<--" condition can be provided');
                 code = [];
-                cond = {lineno: lineno+1, code: code};
+                cond = {lineno: lineno + 1, code: code};
                 chain[cmd] = cond;
                 save_cmd = cmd;
                 if (0 != param.length)
@@ -1021,7 +1012,7 @@ function parse() {
                 assert(null == rule);
                 assert(null != parent);
 
-                let func = code.pop();
+                var func = code.pop();
                 rule = _genEmbeddedRule(func);
                 parent.rules.push(rule);
                 code.push(rule);
@@ -1058,7 +1049,7 @@ function parse() {
                 assert(null == rule);
                 assert(null != parent);
 
-                let func = code.pop();
+                var func = code.pop();
                 rule = _genEmbeddedRule(func);
                 parent.rules.push(rule);
                 code.push(rule);
@@ -1099,8 +1090,7 @@ function parse() {
         return true;
     }
 
-    let param
-        , save = null;
+    let param, save = null;
 
     function _flush(which) {
         function _pp(which) {
@@ -1108,7 +1098,7 @@ function parse() {
             return _proc(cmd, undefined, which);
         }
 
-        for (let i = 0; i < which.length; i++) {
+        for (var i= 0; i < which.length; i++) {
             if (which[i] == '{{' || which[i] == '}}') {
                 if (!_pp(which.splice(0, 0 == i ? 1 : i)))
                     return false;
@@ -1118,7 +1108,7 @@ function parse() {
         return (0 != i) ? _pp(which) : true;
     }
 
-    for (; lineno<lines.length; lineno++) {
+    for (; lineno < lines.length; lineno++) {
         param = parseLine(lines[lineno]);
         assert('//' != param[0]);
         if (0 == param.length || '' == param[0]) {
@@ -1140,8 +1130,7 @@ function parse() {
                     let whatjson = param.join('');
                     try {
                         g_parsed.options[what] = utils.parseJSON(whatjson, true);
-                    }
-                    catch (e) {
+                    } catch (e) {
                         console.log('Fail to parse', whatjson, 'at line', lineno+1);
                         throw e;
                     }
@@ -1158,13 +1147,11 @@ function parse() {
         if ('\\' == param[param.length - 1]) {
             param.pop();
             save = (null == save) ? param : save.concat(param);
-        }
-        else if (null != save) {
+        } else if (null != save) {
             if (!_flush(save.concat(param)))
                 return false;
             save = null;
-        }
-        else if (!_flush(param)) {
+        } else if (!_flush(param)) {
             return false;
         }
     }
@@ -1186,9 +1173,8 @@ function genRet(rule, arg, which, lineno) {
     if (arg instanceof Array) {
         if ('$callback'==arg[0] || '$<='==arg[0]) {
             arg.shift();
-        }
-        else if ('null'!=arg[0] && '$?'!=arg[0] && '\''!=arg[0].substring(0, 1)
-            && -1==arg[0].search('err') && -1==arg[0].search('Err')
+        } else if ('null' != arg[0] && '$?' != arg[0] && '\'' != arg[0].substring(0, 1)
+            && -1 == arg[0].search('err') && -1 == arg[0].search('Err')
         ) {
             console.log('\n\nWarning: the first arg of callback seems not a valid error msg: %s@line %d\n\n',
                 arg[0], lineno);
@@ -1238,20 +1224,17 @@ function genCode(rule, code, which) {
     for (let x in code) {
         line = code[x];
         if (line instanceof Array) {
-            if ('$callback'==line[0] || '$<='==line[0]) {
+            if ('$callback' == line[0] || '$<=' == line[0]) {
                 str += genRet(rule, line, which, -1);
-            }
-            else {
+            } else {
                 for (let y in line) {
                     str += line[y] + ' ';
                 }
                 str += '\n';
             }
-        }
-        else if ('string' == typeof line) {
+        } else if ('string' == typeof line) {
             str += line;
-        }
-        else {
+        } else {
             // embeded rule
             str += genRule2(line);
         }
@@ -1267,8 +1250,7 @@ function _genFuncCallStr(func, ret, conctrl) {
             let f = arr.pop();
             let o = arr.join('.');
             str = conctrl + '.run(' + arr.join('.') + ',' + o + '.' + f;
-        }
-        else {
+        } else {
             str = conctrl + '.run(' + func[0];
         }
         if (func.length > 1) {
@@ -1278,12 +1260,10 @@ function _genFuncCallStr(func, ret, conctrl) {
                     break;
                 }
             }
-        }
-        else {
+        } else {
             str += ',';
         }
-    }
-    else {
+    } else {
         switch (ret) {
         case 'return':
             assert(func.length >= 1, 'Wrong format of func: ' + func.toString());
@@ -1331,8 +1311,7 @@ function genParallel(rule, cond, func, which, last) {
     if (cond.conctrl) {
         if ('parallel' == cond.run) {
             appendGlobalCode('let __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ', \' !' + func[0] + '\');\n');
-        }
-        else {
+        } else {
             code = 'let __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ');\n';
         }
     }
@@ -1365,8 +1344,7 @@ function genFuncCall(rule, cond, func, which, last) {
 
     if ('parallel' == cond.run || 'parallel_local' == cond.run) {
         return genParallel(rule, cond, func, which, last);
-    }
-    else if ('function' == cond.ret) {
+    } else if ('function' == cond.ret) {
         return _genFuncCallStr(func, cond.ret) + 'callback) {'
             +   genOk(rule, which+1)
             + '}';
@@ -1393,21 +1371,19 @@ function genOk(rule, which) {
         str = genCode(rule, cond.code, which);
         let func = cond.func;
         if (func) {
-            if ('$callback'==func[0] || 'callback'==func[0]) {
+            if ('$callback' == func[0] || 'callback' == func[0]) {
                 str += genRet(rule, func, which, cond.lineno);
-                assert(which == rule.chains.length-1
+                assert(which == rule.chains.length - 1
                     , sprintf('More chain found after LAST => chain @line %d. Something must be wrong!', cond.lineno));
-            }
-            else {
-                if ('null'==func[0] || '\''==func[0].substr(0, 1) || '"'==func[0].substr(0, 1)) {
+            } else {
+                if ('null' == func[0] || '\'' == func[0].substr(0, 1) || '"' == func[0].substr(0, 1)) {
                     throw new Error(func[0] + ' seems not a valid function, should be <= ? @line '
                                     + cond.lineno + ', Rule: ' + rule.target);
                 }
-                str += genFuncCall(rule, cond, func, which, which == rule.chains.length-1);
+                str += genFuncCall(rule, cond, func, which, which == rule.chains.length - 1);
             }
-        }
-        else {
-            assert(which == rule.chains.length-1
+        } else {
+            assert(which == rule.chains.length - 1
                 , sprintf('More chain found after LAST => chain @line %d. Something must be wrong!', cond.lineno));
         }
         return str;
@@ -1418,7 +1394,7 @@ function genOk(rule, which) {
     str = genCode(rule, cond.code, which);
     str += genRet(rule, cond.func, which, cond.lineno);
 
-    assert(which == rule.chains.length-1
+    assert(which == rule.chains.length - 1
         , sprintf('More chain found after <= chain @line %d. Something must be wrong!', cond.lineno));
     return str;
 }
@@ -1455,25 +1431,25 @@ function genRule(rule) {
 
 function genRule2(rule) {
     let cond = rule.proto;
-    return genFuncCall(rule, cond, cond.func, 0, 1==rule.chains.length);
+    return genFuncCall(rule, cond, cond.func, 0, 1 == rule.chains.length);
 }
 
 function genOptionalArgCheck(optarg) {
     let str = 'if (undefined == callback) {';
 
-    for (let i=optarg.length-1; i>=0; i--) {
+    for (let i = optarg.length - 1; i >= 0; i--) {
         str += 'if (\'function\' == typeof ' + optarg[i] +') { callback=' + optarg[i] +';';
-        for (let j=optarg.length-1; j>=i; j--) {
+        for (let j = optarg.length - 1; j >= i; j--) {
             str += optarg[j] + '=undefined;';
         }
         str += '} else { assert(undefined == ' + optarg[i] + ');'
     }
-    for (let i=0; i<optarg.length; i++) {
+    for (let i = 0; i < optarg.length; i++) {
         str += '}';
     }
     str += '}';
 
-/*    let str = '';
+    /*let str = '';
     for (let i=0; i<optarg.length; i++) {
         str += 0 == i
             ? ('if(\'function\'==typeof ' + optarg[i] + ') {')
@@ -1489,7 +1465,7 @@ function genOptionalArgCheck(optarg) {
 
 function genTypeCheck(proto) {
     let str = '';
-    for (let i=1; i<proto.length; i++) {
+    for (let i = 1; i<proto.length; i++) {
         switch (proto[i].type) {
         case undefined:
         case '':
@@ -1535,26 +1511,21 @@ function _genShell(phrases, rule) {
                     throw new Error("Wrong parameters: " + what);
                 }
                 str += rule.proto[n].name;
-            }
-            else if ('$@' == what) {
+            } else if ('$@' == what) {
                 str += '\n' + genRule(rule);
-            }
-            else if ('$+' == what) {
-                for (let i=1; i<rule.proto.length; i++) {
+            } else if ('$+' == what) {
+                for (let i = 1; i<rule.proto.length; i++) {
                     str += rule.proto[i].name + ',';
                 }
-            }
-            else if ('$!?' == what) {
+            } else if ('$!?' == what) {
                 if (0 != rule.optarg.length) {
                     str += genOptionalArgCheck(rule.optarg);
                 }
                 str += 'assert(callback, \'Invalid callback of [' + rule.target + '], possibly missing arguments\');';
-            }
-            else if ('$!:' == what) {
+            } else if ('$!:' == what) {
                 str += genTypeCheck(rule.proto);
             }
-        }
-        else {
+        } else {
             str += what;
         }
     }
@@ -1613,8 +1584,7 @@ function generateFromString(str, shell, filename) {
             code = prepareSchema() + genCode(null, g_parsed.code, 0) + code;
             return code;
         }
-    }
-    catch (e) {
+    } catch (e) {
         throw e;
     }
     return null;

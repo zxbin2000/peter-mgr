@@ -190,7 +190,6 @@ let __pp = Engine.generate(__dirname + '/schema.pp');
 assert(null != __pp, "Failed to generate from schema.pp");
 eval(__pp);
 
-
 function _procUpdate(sm, arg) {
     function _run(data, callback) {
         console.log(data.toString('utf8'));

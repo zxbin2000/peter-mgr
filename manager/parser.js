@@ -2,6 +2,8 @@
  * Created by linshiding on 3/10/15.
  */
 
+'use strict'
+
 let assert = require('assert');
 let ascii = require('../utils/ascii');
 let ObjectID = require('mongodb').ObjectID;
@@ -211,7 +213,7 @@ function genPair(which, name, type) {
             return null;
 
         case leftBracketCode:  // [
-            let len = name.length;
+            var len = name.length;
             if (name.charCodeAt(len - 1) != rightBracketCode  // ]
                 || name.charCodeAt(1) == tildeCode              // ~
                 || name.charCodeAt(1) == starCode               // *
@@ -241,7 +243,7 @@ function genPair(which, name, type) {
             break;
 
         case leftBraceCode:  // {
-            let len = name.length;
+            var len = name.length;
             if (name.charCodeAt(len - 1) != rightBraceCode  // }
                 || name.charCodeAt(1) == tildeCode              // ~
                 || name.charCodeAt(1) == starCode               // *
@@ -746,7 +748,7 @@ function installSchema(which, global) {
         , root = which[1][0]
         , inherits = which[3];
     for (let x in untyped) {
-        let cur = untyped[x][0]
+        var cur = untyped[x][0]
             , sch = untyped[x][1]
             , peter = untyped[x][2];
 
@@ -806,8 +808,7 @@ function installSchema(which, global) {
                     _addSchemaRefStr(sch, sset.__ref__[x], check);
                 }
             }
-        }
-        else if (sch != sset) {
+        } else if (sch != sset) {
             sch.__str__ = sset.__str__ + "\n" + sch.__str__;
             check[sset.__name__] = true;
         }
