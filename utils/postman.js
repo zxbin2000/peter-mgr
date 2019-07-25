@@ -1,7 +1,7 @@
-var request = require('request');
-var crypto = require('crypto');
-var utils = require('./utils');
-var VERSION = '1.1.0';
+let request = require('request');
+let crypto = require('crypto');
+let utils = require('./utils');
+let VERSION = '1.1.0';
 
 
 if (typeof String.prototype.startsWith != 'function') {
@@ -11,7 +11,7 @@ if (typeof String.prototype.startsWith != 'function') {
 }
 
 module.exports = function (addr, options) {
-    var apiKey = ''
+    let apiKey = ''
       , apiSecret = ''
       , mute = false
       , timeout = 0;
@@ -65,7 +65,7 @@ Postman.prototype.del = function (path, data, options, callback) {
 };
 
 Postman.prototype._request = function(type, path, params, options, callback) {
-    var cookie;
+    let cookie;
     if ('function' == typeof options) {
         callback = options;
         options = {};
@@ -78,19 +78,19 @@ Postman.prototype._request = function(type, path, params, options, callback) {
     else if (options.cookie) {
         cookie = options.cookie;
     }
-    var timeout = options.timeout || this.timeout;
+    let timeout = options.timeout || this.timeout;
 
-    var ms = String(new Date().getTime());
-    var user_agent = 'Postman/'+VERSION+' (node '+process.version+')';
-    var headers = {
+    let ms = String(new Date().getTime());
+    let user_agent = 'Postman/'+VERSION+' (node '+process.version+')';
+    let headers = {
         'User-Agent': user_agent,
         'X-Authentication-Key': this.apiKey,
         'X-Authentication-Nonce': ms,
         'X-Authentication-Signature': crypto.createHmac('SHA256', this.apiSecret).update(ms).digest('base64')
     };
 
-    var j = request.jar();
-    var arg = {
+    let j = request.jar();
+    let arg = {
         url: this.apiURL + ('/'==path.substr(0, 1) ? path : '/' + path),
         encoding: null,
         headers: headers,
@@ -106,9 +106,9 @@ Postman.prototype._request = function(type, path, params, options, callback) {
         arg.form = params;
     }
 
-    var mute = this.mute;
-    var self = this;
-    var callback_check = function (err, res, body) {
+    let mute = this.mute;
+    let self = this;
+    let callback_check = function (err, res, body) {
         //console.log('callback_check', body);
         if (!callback) {
             return;
@@ -135,7 +135,7 @@ Postman.prototype._request = function(type, path, params, options, callback) {
     };
 
     //if (cookie) {
-    //    var cookie = request.cookie(cookie);
+    //    let cookie = request.cookie(cookie);
     //    j.setCookie(cookie, arg.url);
     //}
 

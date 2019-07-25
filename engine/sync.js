@@ -1,12 +1,12 @@
-var assert = require('assert');
-var Postman = require('../utils/postman');
-var URL = require('url');
-var utils = require('../utils/utils');
+let assert = require('assert');
+let Postman = require('../utils/postman');
+let URL = require('url');
+let utils = require('../utils/utils');
 
 // options: {ttl: ttl, timeout: timeout, updater: func, from: from, nocache: true/false}
 function Sync(url, options) {
     options = options || {};
-    var o = URL.parse(url);
+    let o = URL.parse(url);
     this.nc = Postman(o.protocol+'//'+ o.host, {mute: options.mute, timeout: options.timeout});
     this.path = o.path;
     this.started = false;
@@ -17,8 +17,8 @@ function Sync(url, options) {
 }
 
 Sync.prototype.start = function (from, callback) {
-    var self = this;
-    var updater = self.options.updater;
+    let self = this;
+    let updater = self.options.updater;
     if ('function' == typeof from) {
         callback = from;
         from = undefined;
@@ -29,7 +29,7 @@ Sync.prototype.start = function (from, callback) {
 
     function _do(cb) {
         function addQueryArgs(path, name, arg) {
-            var has_query = path.includes('\?');
+            let has_query = path.includes('\?');
             return arg ? path+(has_query?'&':'?')+name+'='+arg : path;
         }
         self.nc.get(addQueryArgs(self.path, 'from', from), function (err, arg) {
@@ -59,7 +59,7 @@ Sync.prototype.start = function (from, callback) {
 };
 
 Sync.prototype.startAlways = function (from, default_value, callback) {
-    var self = this;
+    let self = this;
 
     if ('function' == typeof from) {
         callback = from;

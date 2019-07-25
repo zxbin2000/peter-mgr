@@ -1,8 +1,8 @@
-var assert = require('assert');
+let assert = require('assert');
 
 function runEach(args, callback) {
-    var obj = null;
-    var func = args.shift();
+    let obj = null;
+    let func = args.shift();
 
     if ('function' != typeof func) {
         obj = func;
@@ -19,11 +19,11 @@ function runEach(args, callback) {
  */
 function run(what, callback) {
     assert(what && (what instanceof Array), 'Invalid parallel target');
-    var n = Object.keys(what).length;
-    var results = [];
-    var ret = 0;
+    let n = Object.keys(what).length;
+    let results = [];
+    let ret = 0;
 
-    for (var i=0; i<n; i++) {
+    for (let i=0; i<n; i++) {
         (function (x, y) {
             runEach(y, function (err, arg) {
                 results[x] = [err, arg];

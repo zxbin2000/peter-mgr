@@ -1,8 +1,8 @@
 /**
  * Created by linshiding on 1/3/16.
  */
-var assert = require('assert');
-var splitChar = require('../utils/split').splitChar;
+let assert = require('assert');
+let splitChar = require('../utils/split').splitChar;
 
 function Trie(multiple) {
     this.root = [-1, {}];
@@ -12,14 +12,14 @@ function Trie(multiple) {
 Trie.prototype = {
     addWord: function (token, id, flag) {
         assert(token);
-        var char = splitChar(token);
-        var cur = this.root;
-        for (var i=0; i<char.length; i++) {
+        let char = splitChar(token);
+        let cur = this.root;
+        for (let i=0; i<char.length; i++) {
             cur = (function (node, word) {
                 if (word in node[1]) {
                     return node[1][word];
                 }
-                var _new = [-1, {}];
+                let _new = [-1, {}];
                 node[1][word] = _new;
                 return _new;
             })(cur, char[i]);
@@ -29,23 +29,22 @@ Trie.prototype = {
                 cur[0] = {};
             }
             cur[0][id] = undefined==flag ? true : flag;
-        }
-        else {
+        } else {
             cur[0] = id;
         }
     },
 
     splitString: function (str) {
-        var char = splitChar(str);
+        let char = splitChar(str);
         if (char.length == 0) {
             return [];
         }
-        var words = [];
-        var cur = this.root;
-        var from = 0, last = 0, save_pos = -1, save;
-        for (var x=0; x<char.length; x++) {
+        let words = [];
+        let cur = this.root;
+        let from = 0, last = 0, save_pos = -1, save;
+        for (let x=0; x<char.length; x++) {
             function _push(found, from, to) {
-                for (var i=from; i<to; i++) {
+                for (let i=from; i<to; i++) {
                     if (char[i] == ' ') {
                         if (from != i) {
                             words.push([found, char.slice(from, i).join('')]);
@@ -79,8 +78,7 @@ Trie.prototype = {
                 last = save_pos;
                 from = save_pos;
                 x = from - 1;
-            }
-            else {
+            } else {
                 x = from;
                 from ++;
             }
@@ -93,17 +91,16 @@ Trie.prototype = {
                 _push(-1, last, from);
             }
             _push(cur[0], from, x);
-        }
-        else if (last != char.length) {
+        } else if (last != char.length) {
             _push(-1, last, char.length);
         }
         return words;
     },
 
     find: function (str) {
-        var char = splitChar(str);
-        var cur = this.root;
-        for (var x=0; x<char.length; x++) {
+        let char = splitChar(str);
+        let cur = this.root;
+        for (let x=0; x<char.length; x++) {
             if (char[x] in cur[1]) {
                 cur = cur[1][char[x]];
                 continue;
@@ -116,16 +113,10 @@ Trie.prototype = {
     },
 
     loadFromDict: function (dict) {
-        for (var x in dict) {
+        for (let x in dict) {
             this.addWord(x, dict[x]);
         }
     }
 };
 
 module.exports = Trie;
-//{
-//    createTrie: function (multiple) {
-//        var trie = new Trie(multiple);
-//        return trie;
-//    }
-//};

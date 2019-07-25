@@ -3,15 +3,15 @@
  */
 'use strict';
 
-var moment = require('moment');
-var assert = require('assert');
-var sprintf = require('sprintf-js').sprintf;
-var fs = require('fs');
-var os = require('os');
-var strip = require('strip-comment');
-var jsonic = require('jsonic');
-var schedule = require('node-schedule');
-var config = require('config');
+let moment = require('moment');
+let assert = require('assert');
+let sprintf = require('sprintf-js').sprintf;
+let fs = require('fs');
+let os = require('os');
+let strip = require('strip-comment');
+let jsonic = require('jsonic');
+let schedule = require('node-schedule');
+let config = require('config');
 
 function timeString(time, format) {
     if (undefined == format) {
@@ -26,7 +26,7 @@ function now() {
 
 function parseJSON(str, use_jsonic) {
     if (use_jsonic) {
-        var c = str.substr(0, 1);
+        let c = str.substr(0, 1);
         switch (c) {
         case '{':
         case '[':
@@ -62,7 +62,7 @@ function hasOwn(obj, key) {
 
 function isEmpty(obj) {
     if (obj) {
-        for (var key in obj) {
+        for (let key in obj) {
             return !hasOwn(obj, key);
         }
     }
@@ -70,7 +70,7 @@ function isEmpty(obj) {
 }
 
 function clear(obj) {
-    for (var x in obj) {
+    for (let x in obj) {
         delete obj[x];
     }
     return obj;
@@ -78,8 +78,8 @@ function clear(obj) {
 
 function cmpObj(obj1, obj2, fields) {
     if (undefined == fields) {
-        var type1 = typeof obj1;
-        var type2 = typeof obj2;
+        let type1 = typeof obj1;
+        let type2 = typeof obj2;
 
         if (type1 != type2) {
             return sprintf('-type [%s] [%s]', type1, type2);
@@ -91,13 +91,13 @@ function cmpObj(obj1, obj2, fields) {
             return null;
         }
 
-        var keys1 = Object.keys(obj1);
-        var keys2 = Object.keys(obj2);
+        let keys1 = Object.keys(obj1);
+        let keys2 = Object.keys(obj2);
         if (keys1.length != keys2.length) {
             return sprintf('-keys [%s] [%s]', keys1, keys2);
         }
-        for (var x in obj1) {
-            var str = cmpObj(obj1[x], obj2[x]);
+        for (let x in obj1) {
+            let str = cmpObj(obj1[x], obj2[x]);
             if (str) {
                 return x + ':' + str;
             }
@@ -105,15 +105,15 @@ function cmpObj(obj1, obj2, fields) {
         return null;
     }
     if (fields instanceof Array) {
-        for (var i = 0; i < fields.length; i++) {
-            var str = cmpObj(obj1[fields[i]], obj2[fields[i]]);
+        for (let i = 0; i < fields.length; i++) {
+            let str = cmpObj(obj1[fields[i]], obj2[fields[i]]);
             if (str) {
                 return '#' + i + ':' + str;
             }
         }
         return null;
     }
-    var str = cmpObj(obj1[fields], obj2[fields]);
+    let str = cmpObj(obj1[fields], obj2[fields]);
     if (str) {
         return fields + ':' + str;
     }
@@ -121,8 +121,8 @@ function cmpObj(obj1, obj2, fields) {
 }
 
 function cleanAssociateArray(arr) {
-    var out = [];
-    for (var x in arr) {
+    let out = [];
+    for (let x in arr) {
         out.push(arr[x]);
     }
     return out;
@@ -133,7 +133,7 @@ function objLen(obj) {
 }
 
 function resJSON(code, msg, data) {
-    var result = {};
+    let result = {};
     result.code = code;
     result.msg = msg;
     result.timestamp = now();
@@ -142,10 +142,10 @@ function resJSON(code, msg, data) {
 }
 
 function partial(obj, fields) {
-    var out = {};
+    let out = {};
     if (fields instanceof Array) {
-        for (var i = 0; i < fields.length; i++) {
-            var x = fields[i];
+        for (let i = 0; i < fields.length; i++) {
+            let x = fields[i];
             if (obj.hasOwnProperty(x)) {
                 out[x] = obj[x];
             }
@@ -160,41 +160,41 @@ function partial(obj, fields) {
 }
 
 function arr2json(arr, fields) {
-    var out = {}
+    let out = {}
         , x;
 
     assert(arr instanceof Array);
     assert(fields instanceof Array);
     assert(arr.length >= fields.length);
 
-    for (var i = 0; i < fields.length; i++) {
+    for (let i = 0; i < fields.length; i++) {
         out[fields[i]] = arr[i];
     }
     return out;
 }
 
 function translateKeyArray(keyarr, map) {
-    var out = [];
-    for (var i = 0; i < keyarr.length; i++) {
+    let out = [];
+    for (let i = 0; i < keyarr.length; i++) {
         out.push(map[keyarr[i]]);
     }
     return out;
 }
 
 function pickColumnFromArray(arrayOfArray, column) {
-    var out = [];
-    for (var i = 0; i < arrayOfArray.length; i++) {
+    let out = [];
+    for (let i = 0; i < arrayOfArray.length; i++) {
         out.push(arrayOfArray[i][column]);
     }
     return out;
 }
 
 function projArray(arr, key, fields) {
-    var out = {};
+    let out = {};
     if (fields instanceof Array) {
-        for (var x in arr) {
-            var res = [];
-            for (var y in fields) {
+        for (let x in arr) {
+            let res = [];
+            for (let y in fields) {
                 res.push(arr[x][fields[y]]);
             }
             out[arr[x][key]] = res;
@@ -203,21 +203,21 @@ function projArray(arr, key, fields) {
     }
 
     if (fields) {
-        for (var x in arr) {
+        for (let x in arr) {
             out[arr[x][key]] = arr[x][fields];
         }
         return out;
     }
 
-    for (var x in arr) {
+    for (let x in arr) {
         out[arr[x][key]] = arr[x];
     }
     return out;
 }
 
 function projObj(arr, key, fields) {
-    var out = {};
-    for (var x in arr) {
+    let out = {};
+    for (let x in arr) {
         out[arr[x][key]] = partial(arr[x], fields);
     }
     return out;
@@ -236,7 +236,7 @@ function reduceArray(arr, keys) {
 
     //console.log(keys);
     function proc(inputs, n) {
-        var func, field;
+        let func, field;
         if ('string' == typeof keys[n]) {
             func = function (value) {
                 return value;
@@ -248,15 +248,15 @@ function reduceArray(arr, keys) {
             field = keys[n][1];
         }
 
-        var out = {};
-        for (var x in inputs) {
-            var what = func(inputs[x][field]);
+        let out = {};
+        for (let x in inputs) {
+            let what = func(inputs[x][field]);
             if (!out[what]) {
                 out[what] = [];
             }
             out[what].push(inputs[x]);
         }
-        for (var x in out) {
+        for (let x in out) {
             if (n != keys.length-1) {
                 out[x] = proc(out[x], n+1);
             }
@@ -270,25 +270,25 @@ function reduceArray(arr, keys) {
 }
 
 function partialArray(arr, fields) {
-    var out = [];
-    for (var i in arr) {
+    let out = [];
+    for (let i in arr) {
         out.push(partial(arr[i], fields));
     }
     return out;
 }
 
 function copyArray(arr) {
-    var newarr = [];
-    for (var x in arr) {
+    let newarr = [];
+    for (let x in arr) {
         newarr.push(arr[x]);
     }
     return newarr;
 }
 
 function uniqueArray(arr) {
-    var result = [], hash = {};
-    var elem;
-    for (var i=0; i<arr.length; i++) {
+    let result = [], hash = {};
+    let elem;
+    for (let i=0; i<arr.length; i++) {
         elem = arr[i];
         if (null!=elem && !hash[elem]) {
             result.push(elem);
@@ -299,7 +299,7 @@ function uniqueArray(arr) {
 }
 
 function mergeArray(arr1, arr2) {
-    var arr = arr1;
+    let arr = arr1;
     arr.concat(arr2);
     return uniqueArray(arr);
 }
@@ -310,10 +310,10 @@ function shuffleArray(arr) {        // in-place random shuffling
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min)) + min;
     }
-    var len = arr.length;
-    var x, t;
+    let len = arr.length;
+    let x, t;
     // random shuffle
-    for (var i=0; i<len; i++) {
+    for (let i=0; i<len; i++) {
         x = getRandomInt(0, len);
         if (i != x) {
             t = arr[x];
@@ -326,7 +326,7 @@ function shuffleArray(arr) {        // in-place random shuffling
 
 function retcallback(arg) {
     assert(arg.length == 3);
-    var callback = arg[0];
+    let callback = arg[0];
     process.nextTick(function () {
         callback(arg[1], arg[2]);
     });
@@ -339,13 +339,13 @@ function replaceStringTail(string, from, to) {
 
 // conf lookup order: cwd -> start script dir
 function mongoAddrFromEnv(start_script_dir) {
-    var dir = [process.cwd()];
+    let dir = [process.cwd()];
     if (undefined!=start_script_dir && start_script_dir!=dir[0])
         dir.push(start_script_dir);
 
-    var host = os.hostname();
-    var env, mongoaddr;
-    for (var x in dir) {
+    let host = os.hostname();
+    let env, mongoaddr;
+    for (let x in dir) {
         env = loadJsonFile(dir[x]+'/env.json');
         if (null != env) {
             mongoaddr = env[host];
@@ -368,9 +368,9 @@ function mongoAddrFromConf() {
 // !! need to be called with getRealArgv(__filename)
 function getRealArgv(script_path) {
     assert(undefined != script_path);
-    var argv = Array.from(process.argv);
+    let argv = Array.from(process.argv);
     while (argv[0]) {
-        var arg_path = appendTailIfNot(argv[0], '.js');
+        let arg_path = appendTailIfNot(argv[0], '.js');
         try {
             arg_path = fs.realpathSync(arg_path);
             if (arg_path == script_path) {
@@ -395,10 +395,10 @@ function accuTime(time, elapsed) {
 function printTime(time, count) {
     count = count || 1;
 
-    var nano = time[0] * 1e9 + time[1];
-    var f = nano / count;
-    var unit = [['ns', 1000], ['us', 1000], ['ms', 1000], ['s', 60], ['m', 60], ['h', 24], ['day', 30]];
-    var n;
+    let nano = time[0] * 1e9 + time[1];
+    let f = nano / count;
+    let unit = [['ns', 1000], ['us', 1000], ['ms', 1000], ['s', 60], ['m', 60], ['h', 24], ['day', 30]];
+    let n;
 
     for (n=0; n<unit.length-1; n++) {
         if (f >= unit[n][1]) {
@@ -412,13 +412,13 @@ function printTime(time, count) {
 }
 
 function elapsed(start_time) {
-    var time = process.hrtime(start_time);
+    let time = process.hrtime(start_time);
     return printTime(time, 1);
 }
 
 function printSize(num) {
-    var unit = ['B', 'KB', 'MB', 'GB'];
-    var n;
+    let unit = ['B', 'KB', 'MB', 'GB'];
+    let n;
 
     for (n=0; n<3; n++) {
         if (num >= 1024.0) {
@@ -439,7 +439,7 @@ function safeWrite(path, data, callback) {
             callback(null, data);
         });
     }
-    var tmp = path + '.tmp';
+    let tmp = path + '.tmp';
     if ('string' != typeof data && !(data instanceof Buffer)) {
         data = JSON.stringify(data);
     }
@@ -452,14 +452,14 @@ function safeWrite(path, data, callback) {
 }
 
 function loadJsonFile(file, options) {
-    var encoding, _default, jsonic;
+    let encoding, _default, jsonic;
     if (options) {
         encoding = options.encoding;
         _default = options.default;
         jsonic = options.jsonic;
     }
     try {
-        var str = strip.js(fs.readFileSync(file).toString(encoding));
+        let str = strip.js(fs.readFileSync(file).toString(encoding));
         return parseJSON(str, jsonic);
     }
     catch (e) {
@@ -478,7 +478,7 @@ function loadJsonFileAsync(file, options, callback) {
         options = undefined;
     }
 
-    var encoding, _default, jsonic;
+    let encoding, _default, jsonic;
     if (options) {
         encoding = options.encoding;
         _default = options.default;
@@ -487,7 +487,7 @@ function loadJsonFileAsync(file, options, callback) {
     try {
         fs.readFile(file, function (err, arg) {
             if (null == err) {
-                var str = arg.toString(encoding);
+                let str = arg.toString(encoding);
                 try {
                     str = strip.js(str);
                     arg = parseJSON(str, jsonic);
@@ -516,7 +516,7 @@ function loadJsonFileAsync(file, options, callback) {
 
 function setif(src, dest) {
     assert(src);
-    for (var x in dest) {
+    for (let x in dest) {
         if (src.hasOwnProperty(x)) {
             if ('object' == typeof dest[x]) {
                 setif(src[x], dest[x]);
@@ -529,7 +529,7 @@ function setif(src, dest) {
 }
 
 function loadConfFile(file, getconf) {
-    var conf = loadJsonFile(file);
+    let conf = loadJsonFile(file);
     if (null != conf) {
         setif(conf, getconf);
     }
@@ -537,20 +537,20 @@ function loadConfFile(file, getconf) {
 }
 
 function limitDisplayLength(str, len) {
-    var n = 0;
-    for (var x=0; x<str.length && n<len; x++) {
-        var c = str.charCodeAt(x);
+    let n = 0;
+    for (let x=0; x<str.length && n<len; x++) {
+        let c = str.charCodeAt(x);
         n += (c<255) ? 1 : 2;
     }
-    var out = str.substr(0, x);
+    let out = str.substr(0, x);
     for ( ; n<len; n++)
         out += ' ';
     return out;
 }
 
 function blankStr(len) {
-    var str = '';
-    for (var i=0; i<len; i++) {
+    let str = '';
+    for (let i=0; i<len; i++) {
         str += ' ';
     }
     return str;
@@ -571,8 +571,8 @@ function sortArrWithTime(arr, time_col, descending) {
 }
 
 function appendTailIfNot(str, tail) {
-    var len1 = str.length;
-    var len2 = tail.length;
+    let len1 = str.length;
+    let len2 = tail.length;
     if (str.substring(len1-len2) != tail) {
         str += tail;
     }
@@ -580,8 +580,8 @@ function appendTailIfNot(str, tail) {
 }
 
 function removeTailIf(str, tail) {
-    var len1 = str.length;
-    var len2 = tail.length;
+    let len1 = str.length;
+    let len2 = tail.length;
     if (str.substring(len1-len2) == tail) {
         str = str.substring(0, len1-len2);
     }
@@ -589,7 +589,7 @@ function removeTailIf(str, tail) {
 }
 
 function copyObj(to, from) {
-    for (var x in from) {
+    for (let x in from) {
         to[x] = from[x];
     }
 }
@@ -617,9 +617,9 @@ function runThenRepeat(func, interval, callback) {
 
 // args: timeout, args..., func
 function delay(timeout, args) {
-    var args = Array.prototype.slice.call(arguments);
+    let args = Array.prototype.slice.call(arguments);
     args.shift();       // timeout already there
-    var func = args.pop();
+    let func = args.pop();
     assert('function' == typeof func);
 
     if (!args.length)
@@ -642,8 +642,8 @@ function parseDate(str, next) {
     if (str.length != 8 && str.length != 6 && str.length != 4)
         return null;
 
-    var year = +str.substr(0, 4);
-    var month, day;
+    let year = +str.substr(0, 4);
+    let month, day;
     switch (str.length) {
         case 4:
             month = 1;
@@ -681,7 +681,7 @@ function translateIntervalString(str) {
         assert(false, 'Wrong type of interval:'+str);
         break;
     }
-    var t = parseInt(str);
+    let t = parseInt(str);
     if (isNaN(t)) {
         t = 1;
     }
@@ -717,8 +717,8 @@ function translateIntervalString(str) {
 }
 
 function translateTimeSpan(str) {
-    var tStart, tEnd;
-    var now = new Date();
+    let tStart, tEnd;
+    let now = new Date();
     switch (str) {
         case 'today':
             tStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -731,13 +731,13 @@ function translateTimeSpan(str) {
             break;
 
         case 'this week':
-            var tDay = now.getDay();
+            let tDay = now.getDay();
             tStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (0==tDay ? 6 : tDay - 1));
             tEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
             break;
 
         /*case 'last week':
-         var tDay = now.getDay();
+         let tDay = now.getDay();
          tStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (0==tDay ? 6 : tDay - 1));
          tEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
          break;
@@ -753,7 +753,7 @@ function translateTimeSpan(str) {
             break;
 
         default:
-            var arr = str.search('~') != -1 ? str.split('~') : str.split('-');
+            let arr = str.search('~') != -1 ? str.split('~') : str.split('-');
             if (2 == arr.length) {
                 if (arr[1].toLowerCase() == 'now') {
                     tEnd = new Date(Date.now());

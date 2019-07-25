@@ -3,7 +3,7 @@
 
 ::  _loadFromDB db
 =>  {{
-    var str = ''
+    let str = ''
       , map = {}
       , self = this;
 
@@ -26,12 +26,12 @@
     ! $@ readEachSchema $=
 <-  (($? == 'Not existing') ? null : $?) 0
 <=  {{
-    var schema = Parser.parse(Buffer.from(str));
+    let schema = Parser.parse(Buffer.from(str));
     assert(schema);
 
-    var sch, each
+    let sch, each
       , num = 0;
-    for (var x in schema) {
+    for (let x in schema) {
         sch = schema[x];
         if (sch.__type__ == '__peter__') {
             each = map[sch.__name__];

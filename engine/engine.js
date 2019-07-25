@@ -1,19 +1,19 @@
-var utils = require('../utils/utils');
-var Path = require('path');
-var assert = require('assert');
-var fs = require('fs');
-var sprintf = require("sprintf-js").sprintf;
-var ascii = require('../utils/ascii');
-var beautify = require('js-beautify').js_beautify;
-var os = require('os');
-var Parser = require('../manager/parser');
-var jsonic = require('jsonic');
+let utils = require('../utils/utils');
+let Path = require('path');
+let assert = require('assert');
+let fs = require('fs');
+let sprintf = require("sprintf-js").sprintf;
+let ascii = require('../utils/ascii');
+let beautify = require('js-beautify').js_beautify;
+let os = require('os');
+let Parser = require('../manager/parser');
+let jsonic = require('jsonic');
 
-var dollarCode = ascii['$'];
-var digitCode0 = ascii['0'];
-var digitCode9 = ascii['9'];
-var dashCode = ascii['-'];
-var g_parsed;
+let dollarCode = ascii['$'];
+let digitCode0 = ascii['0'];
+let digitCode9 = ascii['9'];
+let dashCode = ascii['-'];
+let g_parsed;
 
 function procArg(rule, param) {
     assert(null != rule);
@@ -21,7 +21,7 @@ function procArg(rule, param) {
         return false;
     }
 
-    var notnull = false;
+    let notnull = false;
     if ('NOTNULL' == param[0]) {
         notnull = true;
         param.shift();
@@ -32,7 +32,7 @@ function procArg(rule, param) {
         rule.notnull = [];
     }
 
-    for (var x in param) {
+    for (let x in param) {
         if (notnull) {
             rule.notnull.push(param[x]);
         }
@@ -45,9 +45,9 @@ function resolvePath(file) {
 }
 
 function translateResolve(param, what) {
-    var level = 0;
-    var done = false;
-    var i;
+    let level = 0;
+    let done = false;
+    let i;
     for (i=what; i<param.length; i++) {
         if ('(' == param[i]) {
             if (0 == level) {
@@ -75,11 +75,11 @@ function translateResolve(param, what) {
     if (0!=level || i==param.length || i==what || !done) {
         throw new Error('Wrong arguments for $resolve: '+param.slice(what, param.length-what).join(''));
     }
-    var str = param.splice(what+1, i-what+1).join('');
+    let str = param.splice(what+1, i-what+1).join('');
     return str;
 }
 
-var g_TranslateTable = {
+let g_TranslateTable = {
     '$=>': '$return', '$return': '$return', '$<=': '$callback', '$callback': '$callback',
     '$@': '__arg', '$?': '__err', '$_': '__x', '$=': '__y', '$-': '__ind',
     '$^': '__http_headers', '$%': '__http_cookies', '$&': '__http_files', '$*': '__http_request', '$>': '__http_response',
@@ -97,13 +97,13 @@ var g_TranslateTable = {
 
     '$include': function (param, what) {
         assert(param.length >= what+2, 'Wrong parameters for $include');
-        var str = param.splice(what+1, param.length-what).join('');
-        var filename = eval(str);
+        let str = param.splice(what+1, param.length-what).join('');
+        let filename = eval(str);
         assert(filename, 'Wrong filename for $include');
-        var filePath = resolvePath(filename);
-        var fileExists = fs.existsSync(filePath);
+        let filePath = resolvePath(filename);
+        let fileExists = fs.existsSync(filePath);
         if (!fileExists) {
-            var errorMessage = '$include file : ' + filePath + ' is not exists';
+            let errorMessage = '$include file : ' + filePath + ' is not exists';
             throw new Error(errorMessage);
         }
         _includeFileCode(filePath);
@@ -111,14 +111,14 @@ var g_TranslateTable = {
     }
 };
 function _includeFileCode(filePath) {
-    var isDirector = fs.statSync(filePath).isDirectory();
+    let isDirector = fs.statSync(filePath).isDirectory();
     if (isDirector) {
-        var fileArray = fs.readdirSync(filePath);
+        let fileArray = fs.readdirSync(filePath);
         fileArray.forEach(function (subFileName) {
-            var subFilePath = filePath + '/' + subFileName;
-            var ifFile = fs.statSync(subFilePath).isFile();
+            let subFilePath = filePath + '/' + subFileName;
+            let ifFile = fs.statSync(subFilePath).isFile();
             if (ifFile) {
-                var suffix = Path.extname(subFilePath);
+                let suffix = Path.extname(subFilePath);
                 if (['.js', '.pp'].indexOf(suffix) >= 0) {
                     _includeFileCode(subFilePath);
                 }
@@ -128,8 +128,8 @@ function _includeFileCode(filePath) {
 
         });
     } else {
-        var suffix = Path.extname(filePath);
-        var code = fs.readFileSync(filePath).toString();
+        let suffix = Path.extname(filePath);
+        let code = fs.readFileSync(filePath).toString();
         switch (suffix) {
             case '.js':
                 appendGlobal(['{{']);
@@ -146,26 +146,26 @@ function _includeFileCode(filePath) {
     }
 }
 function translateParameter(global, cond, param, what) {
-    var ball = param[what];
+    let ball = param[what];
     assert(ball.charCodeAt(0) == dollarCode);
-    var len;
-    for (var x in g_TranslateTable) {
+    let len;
+    for (let x in g_TranslateTable) {
         len = x.length;
         if (ball.substring(0, len) == x) {
-            var to = g_TranslateTable[x];
+            let to = g_TranslateTable[x];
             if ('function' == typeof to) {
                 return to(param, what) + ball.substring(len);
             }
             return to + ball.substring(len);
         }
     }
-    var str = false;
-    var from = 1;
+    let str = false;
+    let from = 1;
     if (ball.charCodeAt(1) == dollarCode) {
         str = true;
         from = 2;
     }
-    var n = parseInt(ball.substring(from));
+    let n = parseInt(ball.substring(from));
     if (isNaN(n)) {
         //return '$$TODO';
         return ball;
@@ -182,12 +182,12 @@ function translateParameter(global, cond, param, what) {
 
 function checkFuncString(global, cond, param, isFunc) {
     assert(0 < param.length, '0 < param.length');
-    var level = 0
+    let level = 0
       , first = -2
       , str;
 
     //console.log(1, param);
-    for (var x = 0; x < param.length; x++) {
+    for (let x = 0; x < param.length; x++) {
         if ('$' == param[x].substring(0, 1) && '$$$' != param[x]) {
             param[x] = translateParameter(global, cond, param, x);
             if (null == param[x]) {
@@ -195,7 +195,7 @@ function checkFuncString(global, cond, param, isFunc) {
             }
         }
     }
-    for (var x = 0; x < param.length; x++) {
+    for (let x = 0; x < param.length; x++) {
         //console.log("check %d %d %s, first=%d, %s", level, x, param[x], first, JSON.stringify(param.slice(0, x)));
         switch (param[x].substring(0, 1)) {
         case '(':
@@ -221,7 +221,7 @@ function checkFuncString(global, cond, param, isFunc) {
         //case '>':
             if (--level == 0) {
                 str = '';
-                for (var i = first; i <= x; i++) {
+                for (let i = first; i <= x; i++) {
                     //console.log("%d: %s, %s", i, param[i], str);
                     str += param[i];
                 }
@@ -284,7 +284,7 @@ function checkFuncString(global, cond, param, isFunc) {
                 throw(new Error('No enough parameters for ! '+param[1]));
             }
             param.shift();
-            var c = param[0].charCodeAt(0);
+            let c = param[0].charCodeAt(0);
             if (c == dashCode) {
                 cond.run = 'parallel_local';
                 param[0] = param[0].slice(1);
@@ -301,17 +301,17 @@ function checkFuncString(global, cond, param, isFunc) {
             param.shift();
         }
         if (g_parsed.funcs.hasOwnProperty(param[0])) {
-            var funcRule = g_parsed.funcs[param[0]];
-            var proto = funcRule.proto;
-            var optarg = funcRule.optarg;
-            var len = proto.length - optarg.length;
+            let funcRule = g_parsed.funcs[param[0]];
+            let proto = funcRule.proto;
+            let optarg = funcRule.optarg;
+            let len = proto.length - optarg.length;
             if (param.length<len || param.length>proto.length) {
                 throw new Error('Parameters mismatch: ' + param + '\n\t\t\t--> ' + funcRule.target);
             }
         }
         //else {
         //    console.log('eval', param[0]);
-        //    var _func = eval(param[0]);
+        //    let _func = eval(param[0]);
         //    if ("function" !== typeof _func) {
         //        throw(new Error('Not a valid function of ' + param[0]));
         //    }
@@ -344,38 +344,38 @@ function isKeyword(str) {
     return false;
 }
 
-var g_comment = false;
+let g_comment = false;
 function parseLine(line) {
-    var len = line.length;
+    let len = line.length;
 
-    var quoteCode = ascii['\''];
-    var doubleQuoteCode = ascii['"'];
-    var backSlashCode = ascii['\\'];
-    var spaceCode = ascii[' '];
-    var tabCode = ascii['TAB'];
-    var dollarCode = ascii['$'];
-    var starCode = ascii['*'];
-    var slashCode = ascii['/'];
+    let quoteCode = ascii['\''];
+    let doubleQuoteCode = ascii['"'];
+    let backSlashCode = ascii['\\'];
+    let spaceCode = ascii[' '];
+    let tabCode = ascii['TAB'];
+    let dollarCode = ascii['$'];
+    let starCode = ascii['*'];
+    let slashCode = ascii['/'];
 
     function _match(str, from, len) {
-        var key5 = ['var ', 'var\t', 'new ', 'new\t', 'function ', 'function\t', 'typeof ', 'typeof\t'];
-        var key4 = [' in ', ' in\t', '\tin ', '\tin\t', ' of ', ' of\t', '\tof ', '\tof\t',
+        let key5 = ['let ', 'var\t', 'new ', 'new\t', 'function ', 'function\t', 'typeof ', 'typeof\t'];
+        let key4 = [' in ', ' in\t', '\tin ', '\tin\t', ' of ', ' of\t', '\tof ', '\tof\t',
             ' instanceof ', ' instanceof\t', '\tinstanceof ', '\tinstanceof\t'];
-        var key3 = ['<--'];
-        var key2 = ['//', '{{', '}}', '::', '**', '=>', '<-', '->', ';;', '<=', '/*', '##', '[[', ']]', '++'];
-        var key1 = ['"', "'", '$', '(', ')', ' ', '\t', ',', '.', '{', '}', '\\', '[', ']', '`', '!', '+'];
+        let key3 = ['<--'];
+        let key2 = ['//', '{{', '}}', '::', '**', '=>', '<-', '->', ';;', '<=', '/*', '##', '[[', ']]', '++'];
+        let key1 = ['"', "'", '$', '(', ')', ' ', '\t', ',', '.', '{', '}', '\\', '[', ']', '`', '!', '+'];
 
         if (len >= 4) {
-            for (var x = 0; x < key5.length; x++) {
-                var llen = key5[x].length;
+            for (let x = 0; x < key5.length; x++) {
+                let llen = key5[x].length;
                 if (len >= llen
                     && str.substring(from, from + llen) === key5[x]
                 ) {
                     return 500 + llen;
                 }
             }
-            for (var x = 0; x < key4.length; x++) {
-                var llen = key4[x].length;
+            for (let x = 0; x < key4.length; x++) {
+                let llen = key4[x].length;
                 if (len >= llen
                     && str.substring(from, from + llen) === key4[x]
                 ) {
@@ -384,20 +384,20 @@ function parseLine(line) {
             }
         }
         if (len >= 3) {
-            for (var x = 0; x < key3.length; x++) {
+            for (let x = 0; x < key3.length; x++) {
                 if (str.substring(from, from + 3) === key3[x]) {
                     return 300 + x;
                 }
             }
         }
         if (len >= 2) {
-            for (var x = 0; x < key2.length; x++) {
+            for (let x = 0; x < key2.length; x++) {
                 if (str.substring(from, from + 2) === key2[x])
                     return 200 + x;
             }
         }
         if (len >= 1) {
-            for (var x = 0; x < key1.length; x++) {
+            for (let x = 0; x < key1.length; x++) {
                 if (str.substring(from, from + 1) === key1[x])
                     return 100 + x;
             }
@@ -424,12 +424,12 @@ function parseLine(line) {
         }
     }
 
-    var slice = []
+    let slice = []
         , expect = 0
         , last = 0
         , n
         , blank_before = true;
-    for (var i = 0; i < len; i++) {
+    for (let i = 0; i < len; i++) {
         if (g_comment) {
             if (line.charCodeAt(i) == slashCode && expect == starCode) {
                 g_comment = false;
@@ -578,7 +578,7 @@ function findSchemaType(sm, type) {
 }
 
 function parse() {
-    var global = null
+    let global = null
         , rule = null
         , parent = null
         , chain = null
@@ -645,19 +645,19 @@ function parse() {
     }
 
     function _checkAndProcessRule(rule, checkFailed) {
-        for (var i = 0; i < rule.chains.length; i++) {
-            var _chain = rule.chains[i];
+        for (let i = 0; i < rule.chains.length; i++) {
+            let _chain = rule.chains[i];
             //console.log(i, _chain);
-            for (var x in _chain) {
+            for (let x in _chain) {
                 if ('chainno' == x)
                     continue;
 
-                var _cond = _chain[x];
-                var _code = _cond.code;
+                let _cond = _chain[x];
+                let _code = _cond.code;
                 if (undefined != _code && 0 == _code.length) {
                     delete _cond.code;
                 }
-                var _func = _cond.func;
+                let _func = _cond.func;
                 if (undefined != _func && 0 == _func.length) {
                     delete _cond.func;
                 }
@@ -669,7 +669,7 @@ function parse() {
                 }
             }
 
-            var cond = _chain['=>'] || _chain['<='];
+            let cond = _chain['=>'] || _chain['<='];
             if (!(cond || (rule.embedded && 0 == i))) {
                 console.log('No chain specified for\n\trule:', rule.target);
                 return false;
@@ -683,8 +683,8 @@ function parse() {
                 }
                 cond = rule.chains[i-1]['=>'];
                 if (cond) {
-                    var code = [];
-                    for (var x in cond.func) {
+                    let code = [];
+                    for (let x in cond.func) {
                         code.push(cond.func[x].split('\'').join('\\\''));
                     }
                     _chain['<-'] = {
@@ -707,8 +707,8 @@ function parse() {
     }
 
     function _setDefaultRet(rule, cond) {
-        for (var i = 0; i < rule.chains.length; i++) {
-            var cc = rule.chains[i];
+        for (let i = 0; i < rule.chains.length; i++) {
+            let cc = rule.chains[i];
             if (!cc.hasOwnProperty('<-') && !cc.hasOwnProperty('->')) {
                 cc['<-'] = cond;
             }
@@ -716,8 +716,8 @@ function parse() {
     }
 
     function _genRule(param) {
-        var _export = false;
-        var funcname = param[0];
+        let _export = false;
+        let funcname = param[0];
         if (param[0].substring(0, 1) == '/') {
             param[0] = param[0].substring(1);
             if (param[0] == '') {
@@ -730,7 +730,7 @@ function parse() {
                 param.unshift('_');
             }
             else {
-                var arr = param[0].split('/');
+                let arr = param[0].split('/');
                 if (arr.length> 1) {
                     param[0] = arr.join('__');
                 }
@@ -742,14 +742,14 @@ function parse() {
         }
         checkFuncString(global, null, param, false);
 
-        var target = param.join(' ');//param[0] + '(' + param.slice(1).join(',') + ')';
-        var rule = {lineno: lineno, target: target, chains: [], rules: [], export: _export};
-        var proto = [{name: param[0], display: funcname}];
-        var optarg = [];
+        let target = param.join(' ');//param[0] + '(' + param.slice(1).join(',') + ')';
+        let rule = {lineno: lineno, target: target, chains: [], rules: [], export: _export};
+        let proto = [{name: param[0], display: funcname}];
+        let optarg = [];
 
-        for (var i=1; i<param.length; i++) {
-            var name = param[i];
-            var arg = {display: name};
+        for (let i=1; i<param.length; i++) {
+            let name = param[i];
+            let arg = {display: name};
             if (name.substr(0, 1) == '?') {
                 name = name.substr(1);
                 arg.optional = true;
@@ -811,14 +811,14 @@ function parse() {
             }
 
             // var:type:property_name
-            var n = name.search(/\:/);
+            let n = name.search(/\:/);
             if (-1 != n) {
-                var type = name.substr(n + 1);
+                let type = name.substr(n + 1);
                 name = name.substr(0, n);
 
                 n = type.search(/\:/);
                 if (-1 != n) {
-                    var property = type.substr(n + 1);
+                    let property = type.substr(n + 1);
                     if (property) {
                         arg.property = property;
                     }
@@ -843,8 +843,8 @@ function parse() {
     }
 
     function _genEmbeddedRule(param) {
-        var cond = {func: param};
-        var rule = {embedded: true, target: param.join(' '), chains: [{}], rules: []};
+        let cond = {func: param};
+        let rule = {embedded: true, target: param.join(' '), chains: [{}], rules: []};
 
         if (undefined == param || !checkFuncString(global, cond, param, true)) {
             throw new Error('";;" Must be following a valid function. ' + param.join(' ') + ' @line ' + (lineno-1));
@@ -897,7 +897,7 @@ function parse() {
 
             case 'CODE_}':
                 if ('}'!=param[0] && 'case'!=param[0] && 'default:'!=param[0] && 'default'!=param[0]) {
-                    var last = parent.rules[parent.rules.length-1];
+                    let last = parent.rules[parent.rules.length-1];
                     if (last.proto.ret != 'function') {
                         return _error('No more code is allowed after a rule');
                     }
@@ -1021,7 +1021,7 @@ function parse() {
                 assert(null == rule);
                 assert(null != parent);
 
-                var func = code.pop();
+                let func = code.pop();
                 rule = _genEmbeddedRule(func);
                 parent.rules.push(rule);
                 code.push(rule);
@@ -1058,7 +1058,7 @@ function parse() {
                 assert(null == rule);
                 assert(null != parent);
 
-                var func = code.pop();
+                let func = code.pop();
                 rule = _genEmbeddedRule(func);
                 parent.rules.push(rule);
                 code.push(rule);
@@ -1099,16 +1099,16 @@ function parse() {
         return true;
     }
 
-    var param
+    let param
         , save = null;
 
     function _flush(which) {
         function _pp(which) {
-            var cmd = isKeyword(which[0]) ? which.shift() : '<*>';
+            let cmd = isKeyword(which[0]) ? which.shift() : '<*>';
             return _proc(cmd, undefined, which);
         }
 
-        for (var i = 0; i < which.length; i++) {
+        for (let i = 0; i < which.length; i++) {
             if (which[i] == '{{' || which[i] == '}}') {
                 if (!_pp(which.splice(0, 0 == i ? 1 : i)))
                     return false;
@@ -1134,10 +1134,10 @@ function parse() {
 
             if (param.length > 0) {
                 if (param[0].substring(0, 1) == '$') {
-                    var what = param[0].substring(1);
+                    let what = param[0].substring(1);
                     param.shift();
 
-                    var whatjson = param.join('');
+                    let whatjson = param.join('');
                     try {
                         g_parsed.options[what] = utils.parseJSON(whatjson, true);
                     }
@@ -1195,10 +1195,10 @@ function genRet(rule, arg, which, lineno) {
         }
         assert(arg.length >= 1);
 
-        var first = true;
-        var str = (0 == which) ? 'return process.nextTick(function() {' : 'return ';
+        let first = true;
+        let str = (0 == which) ? 'return process.nextTick(function() {' : 'return ';
         str += 'callback(';
-        for (var x = 0; x < arg.length; x++) {
+        for (let x = 0; x < arg.length; x++) {
             if (',' != arg[x]) {
                 if (!first)
                     str += ',';
@@ -1215,14 +1215,14 @@ function genRet(rule, arg, which, lineno) {
 }
 
 function genCheck(rule, ret) {
-    var notnull = rule.notnull;
+    let notnull = rule.notnull;
     if (undefined == notnull)
         return '';
     assert(ret, 'No return value specified for parameter checking');
 
-    var str = '';
-    for (var x in notnull) {
-        str += sprintf('if (undefined==%s || null==%s) {\nvar __err=\'Invalid parameters\'; %s}\n',
+    let str = '';
+    for (let x in notnull) {
+        str += sprintf('if (undefined==%s || null==%s) {\nlet __err=\'Invalid parameters\'; %s}\n',
             notnull[x], notnull[x], genRet(rule, ret.func, 0, -1)
         );
     }
@@ -1233,16 +1233,16 @@ function genCode(rule, code, which) {
     if (undefined == code)
         return '';
 
-    var str = ''
+    let str = ''
         , line;
-    for (var x in code) {
+    for (let x in code) {
         line = code[x];
         if (line instanceof Array) {
             if ('$callback'==line[0] || '$<='==line[0]) {
                 str += genRet(rule, line, which, -1);
             }
             else {
-                for (var y in line) {
+                for (let y in line) {
                     str += line[y] + ' ';
                 }
                 str += '\n';
@@ -1260,12 +1260,12 @@ function genCode(rule, code, which) {
 }
 
 function _genFuncCallStr(func, ret, conctrl) {
-    var str, i;
+    let str, i;
     if (conctrl) {
-        var arr = func[0].split('.');
+        let arr = func[0].split('.');
         if (arr.length > 1) {
-            var f = arr.pop();
-            var o = arr.join('.');
+            let f = arr.pop();
+            let o = arr.join('.');
             str = conctrl + '.run(' + arr.join('.') + ',' + o + '.' + f;
         }
         else {
@@ -1317,26 +1317,26 @@ function appendGlobalCode(code) {
 function appendGlobal(lines) {
     //Array.prototype.push.apply(g_parsed.lines, lines);
     //console.log('append', lines);
-    for (var x in lines) {
-        var str = lines[x].trim();
+    for (let x in lines) {
+        let str = lines[x].trim();
         if (str.substring(0, 2) == '##')        // TODO
             continue;
         g_parsed.lines.push(lines[x]);
     }
 }
 
-var ctrlId = 0;
+let ctrlId = 0;
 function genParallel(rule, cond, func, which, last) {
-    var code = '';
+    let code = '';
     if (cond.conctrl) {
         if ('parallel' == cond.run) {
-            appendGlobalCode('var __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ', \' !' + func[0] + '\');\n');
+            appendGlobalCode('let __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ', \' !' + func[0] + '\');\n');
         }
         else {
-            code = 'var __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ');\n';
+            code = 'let __con' + ctrlId + '=Concurrent.create(' + cond.conctrl + ');\n';
         }
     }
-    return code + 'var __n, __i, __each, __results, __ret=0, __target=' + cond.set + ';'
+    return code + 'let __n, __i, __each, __results, __ret=0, __target=' + cond.set + ';'
         + 'if (__target instanceof Array) {'
         + '__results=[];__n=Object.keys(__target).length;__i=0;'
         + '} else {'
@@ -1385,13 +1385,13 @@ function genFuncCall(rule, cond, func, which, last) {
 
 function genOk(rule, which) {
     assert(which < rule.chains.length);
-    var chain = rule.chains[which]
+    let chain = rule.chains[which]
       , cond = chain['=>']
       , str;
 
     if (cond) {
         str = genCode(rule, cond.code, which);
-        var func = cond.func;
+        let func = cond.func;
         if (func) {
             if ('$callback'==func[0] || 'callback'==func[0]) {
                 str += genRet(rule, func, which, cond.lineno);
@@ -1425,11 +1425,11 @@ function genOk(rule, which) {
 
 function genNo(rule, which) {
     assert(which < rule.chains.length);
-    var chain = rule.chains[which]
+    let chain = rule.chains[which]
         , cond = chain['<-'];
 
     if (cond) {
-        var str = 'else {\n';
+        let str = 'else {\n';
         str += genCode(rule, cond.code, which);
         str += genRet(rule, cond.func, which, cond.lineno);
         str += '}\n';
@@ -1437,7 +1437,7 @@ function genNo(rule, which) {
     }
     cond = chain['->'];
     if (cond) {
-        var str = 'else {\n';
+        let str = 'else {\n';
         str += genCode(rule, cond.code, which);
         str += '}\n';
         return str;
@@ -1446,39 +1446,39 @@ function genNo(rule, which) {
 }
 
 function genRule(rule) {
-    var chain = rule.chains[0];
+    let chain = rule.chains[0];
 
-    var str = genCheck(rule, chain['<-']);
+    let str = genCheck(rule, chain['<-']);
     str += genOk(rule, 0);
     return str;
 }
 
 function genRule2(rule) {
-    var cond = rule.proto;
+    let cond = rule.proto;
     return genFuncCall(rule, cond, cond.func, 0, 1==rule.chains.length);
 }
 
 function genOptionalArgCheck(optarg) {
-    var str = 'if (undefined == callback) {';
+    let str = 'if (undefined == callback) {';
 
-    for (var i=optarg.length-1; i>=0; i--) {
+    for (let i=optarg.length-1; i>=0; i--) {
         str += 'if (\'function\' == typeof ' + optarg[i] +') { callback=' + optarg[i] +';';
-        for (var j=optarg.length-1; j>=i; j--) {
+        for (let j=optarg.length-1; j>=i; j--) {
             str += optarg[j] + '=undefined;';
         }
         str += '} else { assert(undefined == ' + optarg[i] + ');'
     }
-    for (var i=0; i<optarg.length; i++) {
+    for (let i=0; i<optarg.length; i++) {
         str += '}';
     }
     str += '}';
 
-/*    var str = '';
-    for (var i=0; i<optarg.length; i++) {
+/*    let str = '';
+    for (let i=0; i<optarg.length; i++) {
         str += 0 == i
             ? ('if(\'function\'==typeof ' + optarg[i] + ') {')
             : ('else if(\'function\'==typeof ' + optarg[i] + ') {');
-        for (var j=i+1; j<optarg.length; j++) {
+        for (let j=i+1; j<optarg.length; j++) {
             str += 'assert(undefined==' + optarg[j] + ', \'optional arg assertion failed: \' + ' + optarg[j] + ');';
         }
         str += 'assert(undefined==callback, \'optional arg assertion failed: \' + callback);'
@@ -1488,8 +1488,8 @@ function genOptionalArgCheck(optarg) {
 }
 
 function genTypeCheck(proto) {
-    var str = '';
-    for (var i=1; i<proto.length; i++) {
+    let str = '';
+    for (let i=1; i<proto.length; i++) {
         switch (proto[i].type) {
         case undefined:
         case '':
@@ -1522,14 +1522,14 @@ function genTypeCheck(proto) {
 }
 
 function _genShell(phrases, rule) {
-    var str = ''
+    let str = ''
       , what;
 
-    for (var x in phrases) {
+    for (let x in phrases) {
         what = phrases[x];
 
         if (what.substring(0, 1) == '$') {
-            var n = parseInt(what.substring(1));
+            let n = parseInt(what.substring(1));
             if (!isNaN(n)) {
                 if (n >= rule.proto.length) {
                     throw new Error("Wrong parameters: " + what);
@@ -1540,7 +1540,7 @@ function _genShell(phrases, rule) {
                 str += '\n' + genRule(rule);
             }
             else if ('$+' == what) {
-                for (var i=1; i<rule.proto.length; i++) {
+                for (let i=1; i<rule.proto.length; i++) {
                     str += rule.proto[i].name + ',';
                 }
             }
@@ -1562,12 +1562,12 @@ function _genShell(phrases, rule) {
 }
 
 function genShell(shell, rule) {
-    var phrases = parseLine(shell);
+    let phrases = parseLine(shell);
     return _genShell(phrases, rule);
 }
 
-var g_CRLF = (function() {
-    var type = os.type();
+let g_CRLF = (function() {
+    let type = os.type();
     if (type == 'Windows_NT') {
         return '\r\n';
     }
@@ -1575,17 +1575,17 @@ var g_CRLF = (function() {
 })();
 
 function prepareSchema() {
-    var schema = {};
-    var code = '';
+    let schema = {};
+    let code = '';
     if (g_parsed.schema.length) {
-        var str = g_parsed.schema.join('\n');
+        let str = g_parsed.schema.join('\n');
         schema = Parser.parse(Buffer.from(str));
-        code = 'var __runtime_schema__ = Parser.parse(Buffer.from(\'' + g_parsed.schema.join('\\n') + '\'));\n';
+        code = 'let __runtime_schema__ = Parser.parse(Buffer.from(\'' + g_parsed.schema.join('\\n') + '\'));\n';
     }
 
-    for (var x in g_parsed.rules) {
-        var proto = g_parsed.rules[x].proto;
-        for (var i in proto) {
+    for (let x in g_parsed.rules) {
+        let proto = g_parsed.rules[x].proto;
+        for (let i in proto) {
             if (proto[i].type) {
                 if (!findSchemaType(schema, proto[i].type)) {
                     throw new Error('Unknown type of \'' + proto[i].type + '\' in [' + g_parsed.rules[x].target + ']');
@@ -1598,11 +1598,11 @@ function prepareSchema() {
 
 function generateFromString(str, shell, filename) {
     try {
-        var lines = str.split(g_CRLF);
+        let lines = str.split(g_CRLF);
         g_parsed = {path: filename, code: [], schema: [], rules: [], funcs: {}, lines: lines, options: {}};
         if (parse()) {
-            var code = '';
-            for (var i in g_parsed.rules) {
+            let code = '';
+            for (let i in g_parsed.rules) {
                 code += (undefined != shell)
                     ? genShell(shell, g_parsed.rules[i])
                     : (g_parsed.shell
@@ -1621,8 +1621,8 @@ function generateFromString(str, shell, filename) {
 }
 
 function generate(file, shell) {
-    var filename = Path.resolve(process.cwd(), file);
-    var str = fs.readFileSync(filename).toString();
+    let filename = Path.resolve(process.cwd(), file);
+    let str = fs.readFileSync(filename).toString();
     str = generateFromString(str, shell, filename);
     if (str) {
         str = beautify(str);

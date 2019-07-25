@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-var engine = require('../engine/engine');
-var assert = require('assert');
-var utils = require('../utils/utils');
+const engine = require('../engine/engine');
+const assert = require('assert');
+const utils = require('../utils/utils');
 
-var str = engine.generate(
+const str = engine.generate(
     utils.replaceStringTail(__filename, 'js', 'pp')
 );
 
@@ -29,7 +29,7 @@ function command(arg, rl) {
         return _help();
     }
 
-    var cmd = arg.shift();
+    let cmd = arg.shift();
     switch (cmd) {
         case 'help':
             return _help();

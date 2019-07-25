@@ -1,8 +1,8 @@
-var assert = require('assert');
-var sprintf = require("sprintf-js").sprintf;
-var utils = require('../utils/utils');
+let assert = require('assert');
+let sprintf = require("sprintf-js").sprintf;
+let utils = require('../utils/utils');
 
-var all = [];
+let all = [];
 
 function Con(num, name, fNothingToDo) {
     this.key = all.length;
@@ -18,10 +18,10 @@ function Con(num, name, fNothingToDo) {
 }
 
 function _runOnce(con, cmd) {
-    var _this = cmd.shift();
-    var f = cmd.shift();
-    var callback = cmd.pop();
-    var time;
+    let _this = cmd.shift();
+    let f = cmd.shift();
+    let callback = cmd.pop();
+    let time;
 
     //console.log('_runOnce1', con.doing, cmd.length);
     function _onRet() {
@@ -38,7 +38,7 @@ function _runOnce(con, cmd) {
     }
 
     cmd.push(function onret(err, arg) {
-        var elapsed = process.hrtime(time);
+        let elapsed = process.hrtime(time);
         if (elapsed[0]) {       // > 1s
             con.longtask ++;
         }
@@ -61,7 +61,7 @@ function _runOnce(con, cmd) {
 }
 
 function _run(con) {
-    var cmd;
+    let cmd;
     while (con.doing < con.allow) {
         cmd = con.q.shift();
         if (!cmd) {
@@ -87,7 +87,7 @@ Con.prototype.run = function (func) {
     assert(arguments.length > 1);
     assert('function' == typeof arguments[arguments.length-1]);
 
-    var args = Array.prototype.slice.call(arguments);
+    let args = Array.prototype.slice.call(arguments);
     if ('function' == typeof func) {
         args.unshift(null);
     }
@@ -102,10 +102,10 @@ Con.prototype.isBusy = function () {
     return this.cont && 0 != (this.doing + this.q.length);
 };
 
-var runPrint = false;
-var bVerbose = false;
+let runPrint = false;
+let bVerbose = false;
 function create(num, name, fNothingToDo) {
-    var con = new Con(num, name, fNothingToDo);
+    let con = new Con(num, name, fNothingToDo);
     all.push(con);
 
     if (!runPrint) {
@@ -116,7 +116,7 @@ function create(num, name, fNothingToDo) {
 }
 
 function printTimeRelated(con) {
-    var str = ' ';
+    let str = ' ';
     if (con.done) {
         str += utils.printTime(con.time, con.done) + ' ';
     }
@@ -129,9 +129,9 @@ function printTimeRelated(con) {
 function printStatus() {
     if (!bVerbose)
         return;
-    var first = true;
-    for (var i in all) {
-        var con = all[i];
+    let first = true;
+    for (let i in all) {
+        let con = all[i];
         if (con.cont && con.name) {
             if (first) {
                 console.log('===========================  %s  ===========================', utils.now());
@@ -150,8 +150,8 @@ module.exports = {
         if (undefined != con) {
             return con.isBusy();
         }
-        for (var i in all){
-            var con = all[i];
+        for (let i in all){
+            let con = all[i];
             if (con.cont && 0 != (con.doing + con.q.length))
                 return true;
         }

@@ -27,13 +27,13 @@
 
 ::  load self key loader ?lock
 =>  {{
-    var cache = self.all[key];
+    let cache = self.all[key];
     if (!cache) {
         cache = [Lock.create(key), null, null];
         self.all[key] = cache;
     }
 
-    var old_callback = callback;
+    let old_callback = callback;
     callback = function (err, arg) {
         if (!lock) {
             if (null == err) {
@@ -78,8 +78,8 @@
         options.loader = self.loader;
     }
 
-    var cache;
-    var old_callback = callback;
+    let cache;
+    let old_callback = callback;
     callback = function (err, arg) {
         if (null == err) {
             if (self.verbose) {

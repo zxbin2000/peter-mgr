@@ -135,8 +135,8 @@ module.exports = {
   '~': 126,
 
   isNumber: function(str) {
-    var buf = Buffer.from(str);
-    for (var i=0; i<buf.length; i++) {
+    let buf = Buffer.from(str);
+    for (let i=0; i<buf.length; i++) {
       if ((buf[i]<48 || buf[i]>57) && buf[i]!=46)
         return false;
     }
@@ -144,14 +144,14 @@ module.exports = {
   },
 
   isString: function(str) {
-    var len = str.length;
-    var begin = str.charCodeAt(0);
+    let len = str.length;
+    let begin = str.charCodeAt(0);
     return (begin == 34 || begin == 39) && begin == str.charCodeAt(len - 1);
   },
 
   isAlphaDigit: function (str) {
-    var buf = Buffer.from(str);
-    for (var i=0; i<buf.length; i++) {
+    let buf = Buffer.from(str);
+    for (let i=0; i<buf.length; i++) {
       if (!(buf[i]>=48 && buf[i]<=57
         || buf[i]>=97 && buf[i]<=122
         || buf[i]>=65 && buf[i]<=90))
@@ -161,8 +161,8 @@ module.exports = {
   },
 
   isIdentifier: function (str) {
-    var buf = Buffer.from(str);
-    for (var i=0; i<buf.length; i++) {
+    let buf = Buffer.from(str);
+    for (let i=0; i<buf.length; i++) {
       if (!(buf[i]>=48 && buf[i]<=57
         || buf[i]>=97 && buf[i]<=122
         || buf[i]>=65 && buf[i]<=90

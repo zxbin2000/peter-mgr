@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var peter, index, utils, engine, ppsrv;
-var Concurrent, Parallel, Leadof, Lock, Cache, Sync;
-var Postman, Parser, DataStructure, Exec;
+let peter, index, utils, engine, ppsrv;
+let Concurrent, Parallel, Leadof, Lock, Cache, Sync;
+let Postman, Parser, DataStructure, Exec;
 try {
     peter = require('../manager/peter').createManager();
     index = require('../index/index');
@@ -19,9 +19,8 @@ try {
     Parser = require('../manager/parser');
     DataStructure = require('../data_structure/_index');
     Exec = require('../utils/exec');
-}
-catch (e) {
-    var _peter = require('peter');
+} catch (e) {
+    let _peter = require('peter');
     peter = _peter.createManager();
     index = _peter.Index;
     utils = _peter.Utils;
@@ -38,33 +37,32 @@ catch (e) {
     DataStructure = _peter.DataStructure;
     Exec = _peter.Exec;
 }
-var moment = require('moment');
-var fs = require('fs');
-var assert = require('assert');
-var sprintf = require("sprintf-js").sprintf;
-var Path = require('path');
+let moment = require('moment');
+let fs = require('fs');
+let assert = require('assert');
+let sprintf = require("sprintf-js").sprintf;
+let Path = require('path');
 
-var mongoAddr;
-var bRepeat = false;
-var tRepeat = '10second';
-var bTimer = false;
-var cRepeat = '0 0 9 * * *';
-var bService = false;
-var argv, what, _main, _onExit = process.nextTick;
-var app, conf, port, target, conf_file;
+let mongoAddr;
+let bRepeat = false;
+let tRepeat = '10second';
+let bTimer = false;
+let cRepeat = '0 0 9 * * *';
+let bService = false;
+let argv, what, _main, _onExit = process.nextTick;
+let app, conf, port, target, conf_file;
 
 // to include helper js
 //var __code__ = fs.readFileSync(__dirname+'/dodo-helper.js').toString();
 //eval(__code__);
-var dowhile = Exec.dowhile;
-var downFile = Exec.downFile;
-var doExec = Exec.doExec;
-var loadFile = Exec.loadFile;
+let dowhile = Exec.dowhile;
+let downFile = Exec.downFile;
+let doExec = Exec.doExec;
+let loadFile = Exec.loadFile;
 
 try {
     run();
-}
-catch (e) {
+} catch (e) {
     console.log(e.stack);
     process.exit(-1);
 }
@@ -77,9 +75,9 @@ function run() {
     if (what.substring(what.length - 3) != '.pp')
         what += '.pp';
     argv[0] = what;
-    var basedir = Path.resolve(process.cwd(), Path.dirname(what));
+    let basedir = Path.resolve(process.cwd(), Path.dirname(what));
     function _procconf(action, conf_in_pp) {
-        var conf = {};
+        let conf = {};
         if (conf_in_pp) {
             utils.copyObj(conf, conf_in_pp);
         }
@@ -87,18 +85,17 @@ function run() {
         if (!conf_file) {
             conf_file = basedir + '/' + Path.basename(what, '.pp') + '.json';
         }
-        var conf_in_conf = utils.loadJsonFile(conf_file, {jsonic: true, default: null});
+        let conf_in_conf = utils.loadJsonFile(conf_file, {jsonic: true, default: null});
         if (conf_in_conf) {
             console.log(action, what, 'with conf', conf_file);
             utils.copyObj(conf, conf_in_conf);
-        }
-        else {
+        } else {
             console.log(action, what);
         }
         return conf;
     }
 
-    var options;
+    let options;
     if (bService) {
         options = ppsrv.pp(what);
         if (!mongoAddr && options.mongo) {
@@ -110,8 +107,7 @@ function run() {
         }
         _onExit = ppsrv.callExit;
         app = ppsrv.setup(peter, what, basedir, '40mb', options.no_default_inf);
-    }
-    else {
+    } else {
         options = genPP(what);
         if (!mongoAddr && options.mongo) {
             mongoAddr = options.mongo;
@@ -132,8 +128,7 @@ function run() {
             console.log("Okay, %d schema", arg);
             runPP(_exit);
         });
-    }
-    else {
+    } else {
         runPP(_exit);
     }
 
@@ -146,23 +141,21 @@ function run() {
 }
 
 function genPP(what) {
-    var str = engine.generate(what);
+    let str = engine.generate(what);
     assert(null != str, "Failed to generate from " + what);
     try {
         eval(str);
-    }
-    catch (e) {
-        var file = process.cwd() + '/pp-gen-failed.js';
+    } catch (e) {
+        let file = process.cwd() + '/pp-gen-failed.js';
         fs.writeFileSync(file, str);
         console.log('JS generated at', file);
         throw e;
     }
-    var parsed = engine.getLastParsed();
+    let parsed = engine.getLastParsed();
     if (parsed.funcs.hasOwnProperty('main')) {
         _main = parsed.funcs['main'];
         _main.func = main;
-    }
-    else {
+    } else {
         throw new Error('main is not defined');
     }
     if (parsed.funcs.hasOwnProperty('onExit')) {
@@ -174,7 +167,7 @@ function genPP(what) {
 function runMain(callback) {
     console.log('Now:', utils.now());
 
-    var time = process.hrtime();
+    let time = process.hrtime();
     function cb(err, arg) {
         if (Exec.stats.downloaded || Exec.stats.download_failed
             || Exec.stats.fileloaded || Exec.stats.fileload_failed
@@ -187,7 +180,7 @@ function runMain(callback) {
         callback(err, arg);
     }
 
-    var func = _main.func;
+    let func = _main.func;
     switch (_main.proto.length) {
         case 1:
             func.call(null, cb);
@@ -211,8 +204,7 @@ function runPP(callback) {
             return utils.timer(runMain, cRepeat);
         }
         runMain(callback);
-    }
-    else {
+    } else {
         ppsrv.callMain(argv, conf, function (err, arg) {
             if (null == err) {
                 if (!conf.port) {
@@ -220,20 +212,19 @@ function runPP(callback) {
                     return callback('Invalid conf', 0);
                 }
                 ppsrv.bind(conf.target || '/');
-                var server = app.listen(conf.port, function (err, arg) {
+                let server = app.listen(conf.port, function (err, arg) {
                     assert(null == err, 'Failed to listen to ' + conf.port + ', change?');
                     console.log('Now:', utils.now());
                     console.log('Listening on %d...', server.address().port);
                 });
-            }
-            else {
+            } else {
                 callback(err, arg);
             }
         });
     }
 }
 
-var exiting = false;
+let exiting = false;
 function prepareExit(code) {
     if (!exiting) {
         try {
@@ -269,7 +260,7 @@ function commonSetup() {
         console.log(utils.now(), 'Got SIGHUP, ignored');
     });
     process.on('SIGUSR1', function() {
-        console.log(utils.now(), 'Got SIGUSR2, ignored');
+        console.log(utils.now(), 'Got SIGUSR1, ignored');
     });
     process.on('SIGUSR2', function() {
         console.log(utils.now(), 'Got SIGUSR2, ignored');
@@ -284,52 +275,46 @@ function procArgv() {
     }
     argv.shift();
 
-    for (var i=0; i<argv.length; i++) {
+    for (let i = 0; i < argv.length; i++) {
         if (argv[0] == '-r') {
             bRepeat = true;
             tRepeat = argv[1];
             argv.shift();
             argv.shift();
-        }
-        else if (argv[0] == '-s') {
+        } else if (argv[0] == '-s') {
             bService = true;
             argv.shift();
-        }
-        else if (argv[0] == '-c') {
+        } else if (argv[0] == '-c') {
             conf_file = argv[1];
             argv.shift();
             argv.shift();
-        }
-        else if (argv[0] == '-t') {
+        } else if (argv[0] == '-t') {
             bTimer = true;
             cRepeat = argv[1];
             argv.shift();
             argv.shift();
-        }
-        else {
+        } else {
             break;
         }
     }
 
-    var track_gc_object_stats = false;
+    let track_gc_object_stats = false;
     //var v8 = require('v8');
     //v8.setFlagsFromString('--trace_gc');
     //setTimeout(function() { v8.setFlagsFromString('--notrace_gc'); }, 60e3);
     if (track_gc_object_stats) {
         setInterval(function () {
-            var heap = getV8Statistics();//v8.getHeapStatistics();
+            let heap = getV8Statistics(); //v8.getHeapStatistics();
             //console.log(heap);
-            var usage = process.memoryUsage();
+            let usage = process.memoryUsage();
             console.log('rss: %s  heapTotal: %s  heapUsed: %s, external_allocated: %s', utils.printSize(usage['rss']),
                 utils.printSize(usage['heapTotal']), utils.printSize(usage['heapUsed']), utils.printSize(heap['amount_of_external_allocated_memory']));
 
-            for (var x in heap) {
+            for (let x in heap) {
                 if (heap[x] > 100 * 1024 * 1024)
                     console.log(x, utils.printSize(heap[x]));
             }
-        }, 60*1000);
+        }, 60 * 1000);
     }
-
     return argv;
 }
-

@@ -1,43 +1,43 @@
-var Engine = require('../engine/engine');
-var Concurrent = require('../engine/concurrent');
-var Parallel = require('../engine/parallel');
-var Leadof = require('../engine/leadof');
-var Lock = require('../engine/lock');
-var Cache = require('../engine/cache');
-var Sync = require('../engine/sync');
-var DataStructure = require('../data_structure/_index');
-var Postman = require('../utils/postman');
-var Parser = require('../manager/parser');
-var Exec = require('../utils/exec');
-var moment = require('moment');
-var assert = require('assert');
-var express = require('express');
-var multipart = require('connect-multiparty');
-var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
-var utils = require('../utils/utils');
-var Path = require('path');
-var fs = require('fs');
-var sprintf = require('sprintf-js').sprintf;
+let Engine = require('../engine/engine');
+let Concurrent = require('../engine/concurrent');
+let Parallel = require('../engine/parallel');
+let Leadof = require('../engine/leadof');
+let Lock = require('../engine/lock');
+let Cache = require('../engine/cache');
+let Sync = require('../engine/sync');
+let DataStructure = require('../data_structure/_index');
+let Postman = require('../utils/postman');
+let Parser = require('../manager/parser');
+let Exec = require('../utils/exec');
+let moment = require('moment');
+let assert = require('assert');
+let express = require('express');
+let multipart = require('connect-multiparty');
+let bodyParser = require('body-parser');
+let cookieParser = require('cookie-parser');
+let utils = require('../utils/utils');
+let Path = require('path');
+let fs = require('fs');
+let sprintf = require('sprintf-js').sprintf;
 
-var peter;
-var app;
-var interfaces;
-var _main, _onExit;
-var serial = 0;
-var cookie_parser;
-var verbose = {url: 1, cost: 1, inf: 1};
-var filter = new Map();
+let peter;
+let app;
+let interfaces;
+let _main, _onExit;
+let serial = 0;
+let cookie_parser;
+let verbose = {url: 1, cost: 1, inf: 1};
+let filter = new Map();
 function genInterfaces(parsed) {
-    var out = {};
-    for (var i in parsed.rules) {
-        var rule = parsed.rules[i];
-        var proto = rule.proto;
+    let out = {};
+    for (let i in parsed.rules) {
+        let rule = parsed.rules[i];
+        let proto = rule.proto;
         if (!rule.export)
             continue;
 
-        var intf = [proto[0].name];
-        for (var j=1; j<proto.length; j++) {
+        let intf = [proto[0].name];
+        for (let j=1; j<proto.length; j++) {
             intf.push(proto[j]);
         }
         out[proto[0].display] = intf;
@@ -47,21 +47,21 @@ function genInterfaces(parsed) {
 }
 
 function gen(file) {
-    var _str = Engine.generate(file);
+    let _str = Engine.generate(file);
     assert(null != _str, 'Failed to generate from ' + file);
     try {
         eval(_str);
     }
     catch (e) {
-        var file = process.cwd()+'/pp-gen-failed.js';
+        let file = process.cwd()+'/pp-gen-failed.js';
         fs.writeFileSync(file, _str);
         console.log('JS generated at', file);
         throw e;
     }
 
-    var parsed = Engine.getLastParsed();
+    let parsed = Engine.getLastParsed();
     interfaces = genInterfaces(parsed);
-    for (var x in interfaces) {
+    for (let x in interfaces) {
         interfaces[x][0] = eval(interfaces[x][0]);
     }
 
@@ -76,12 +76,12 @@ function gen(file) {
         return {};
     if (parsed.options.verbose) {
         if (parsed.options.verbose instanceof Array) {
-            for (var x in parsed.options.verbose) {
+            for (let x in parsed.options.verbose) {
                 verbose[parsed.options.verbose[x]] = 1;
             }
         }
         else {
-            for (var x in parsed.options.verbose) {
+            for (let x in parsed.options.verbose) {
                 verbose[x] = parsed.options.verbose[x];
             }
         }
@@ -96,21 +96,21 @@ function gen(file) {
         }
     }
     if (parsed.options.filter) {
-        var filename = parsed.options['filter'];
-        var filePath = Path.resolve(Path.dirname(parsed.path), filename);
-        var code = fs.readFileSync(filePath).toString();
-        var filterArray = JSON.parse(code);
-        for (var api_name in interfaces) {
-            for (var i =0; i < filterArray.length; i++) {
-                var item = filterArray[i];
-                var expression = '^' + item.api + '$' ;
-                var result = api_name.search(expression);
+        let filename = parsed.options['filter'];
+        let filePath = Path.resolve(Path.dirname(parsed.path), filename);
+        let code = fs.readFileSync(filePath).toString();
+        let filterArray = JSON.parse(code);
+        for (let api_name in interfaces) {
+            for (let i =0; i < filterArray.length; i++) {
+                let item = filterArray[i];
+                let expression = '^' + item.api + '$' ;
+                let result = api_name.search(expression);
                 if (result >= 0) {
-                    var before = item.before;
+                    let before = item.before;
                     if (before) {
                         item.before = eval(before);
                     }
-                    var async = item.async;
+                    let async = item.async;
                     if (async) {
                         item.async = eval(async);
                     }
@@ -125,9 +125,9 @@ function gen(file) {
 }
 
 function prepareParams(pnames, data, req, res, target) {
-    var params = [];
-    var pname, value, from;
-    for (var i=1; i<pnames.length; i++) {
+    let params = [];
+    let pname, value, from;
+    for (let i=1; i<pnames.length; i++) {
         pname = pnames[i];
         switch (pname.name) {
         case '__x':
@@ -157,7 +157,7 @@ function prepareParams(pnames, data, req, res, target) {
                                                   : (pname.files ? req.files
                                                                  : (pname.request ? req : data)));
             if (undefined===from || !from[pname.property]) out: {
-                for (var x in from) {
+                for (let x in from) {
                     if (x.toLowerCase() == pname.property.toLowerCase()) {
                         value = from[x];
                         break out;
@@ -182,8 +182,8 @@ function prepareParams(pnames, data, req, res, target) {
 }
 
 function printInterfaces(interfaces) {
-    var arr = [];
-    for (var x in interfaces) {
+    let arr = [];
+    for (let x in interfaces) {
         arr.push([x, interfaces[x]]);
     }
     arr = arr.sort(function (a, b) {
@@ -196,21 +196,21 @@ function printInterfaces(interfaces) {
         return 0;
     });
 
-    var str = '{\n';
-    for (var i in arr) {
-        var inf = arr[i][1];
+    let str = '{\n';
+    for (let i in arr) {
+        let inf = arr[i][1];
         str += '  ' + arr[i][0] + ': [';
-        for (var j=1; j<inf.length; j++) {
+        for (let j=1; j<inf.length; j++) {
             str += ((1==j) ? '' : ', ') + inf[j].display;
         }
         str += '], ';
-        var filterItem =filter.get(arr[i][0]);
+        let filterItem =filter.get(arr[i][0]);
         if (filterItem) {
-            var before = filterItem.before;
+            let before = filterItem.before;
             if (before) {
                 str = str + 'before: ' + before.name + ', ';
             }
-            var async = filterItem.async;
+            let async = filterItem.async;
             if (async) {
                 str = str + 'async: ' + async.name + ', ';
             }
@@ -222,8 +222,8 @@ function printInterfaces(interfaces) {
 }
 
 function _on(target, pnames, req, res, data) {
-    var id = serial ++;
-    var returned = false;
+    let id = serial ++;
+    let returned = false;
     if (verbose.url) {
         console.log('%s %s %s, #%d', utils.now(), req.method, req.url, id);
     }
@@ -231,7 +231,7 @@ function _on(target, pnames, req, res, data) {
         console.log('<-', utils.stringify(data));
     }
     if (verbose.cost) {
-        var time = process.hrtime();
+        let time = process.hrtime();
     }
 
     function _verbose(err, msg) {
@@ -244,7 +244,7 @@ function _on(target, pnames, req, res, data) {
     }
 
     function _error(code, msg, arg) {
-        var ret = {error: msg};
+        let ret = {error: msg};
         if (undefined != arg) {
             ret.data = arg;
         }
@@ -278,7 +278,7 @@ function _on(target, pnames, req, res, data) {
             return false;
         }
 
-        var file;
+        let file;
         switch (err) {
         case '##DOWNLOAD##':
             file = arg;
@@ -296,8 +296,8 @@ function _on(target, pnames, req, res, data) {
             }
             assert(arg instanceof Array);
             assert(arg.length == 2);
-            var headers = arg[0];
-            var data = arg[1];
+            let headers = arg[0];
+            let data = arg[1];
             if (tranHtml(data, res, headers['content-type']))
                 return;
             return res.json(data);
@@ -317,15 +317,15 @@ function _on(target, pnames, req, res, data) {
             }
             assert(arg instanceof Array);
             assert(arg.length == 2);
-            var options = arg[0];
+            let options = arg[0];
             file = arg[1];
 
             if (options.hasOwnProperty('Content-Type')) {
                 res.set({'Content-Type': options['Content-Type']});
             }
             if (options.hasOwnProperty('File-Name')) {
-                var filename = options['File-Name'];
-                var userAgent = (req.headers['user-agent'] || '').toLowerCase();
+                let filename = options['File-Name'];
+                let userAgent = (req.headers['user-agent'] || '').toLowerCase();
                 if (userAgent.indexOf('msie') >= 0 || userAgent.indexOf('chrome') >= 0) {
                     res.setHeader('Content-Disposition', 'attachment; filename=' + encodeURIComponent(filename));
                 }
@@ -343,7 +343,7 @@ function _on(target, pnames, req, res, data) {
     }
 
     try {
-        var params = prepareParams(pnames, data, req, res, target);
+        let params = prepareParams(pnames, data, req, res, target);
         if ('string' == typeof params) {
             return _error(400, 'Missing arguments', params);
         }
@@ -364,16 +364,16 @@ function _on(target, pnames, req, res, data) {
             }
             _error(400, utils.stringify(err), arg);
         });
-        var func = pnames[0];
-        var filter_item = filter.get(target);
+        let func = pnames[0];
+        let filter_item = filter.get(target);
         if (filter_item) {
-            var param = {
+            let param = {
                 "target": target,
                 "request": req,
                 "response": res,
                 "data": data
             }
-            var async = filter_item.async;
+            let async = filter_item.async;
             if (async) {
                 process.nextTick(function(){
                     try {
@@ -387,7 +387,7 @@ function _on(target, pnames, req, res, data) {
                     }
                 });
             }
-            var before = filter_item.before;
+            let before = filter_item.before;
             if (before) {
                 before(param,function () {
                     func.apply(null, params);
@@ -415,11 +415,11 @@ function bindInterfaces(path, interfaces) {
     }
 
     app.get('/__list', function (req, res) {
-        var out = {};
-        for (var x in interfaces) {
-            var arr = [];
-            var inf = interfaces[x];
-            for (var j=1; j<inf.length; j++) {
+        let out = {};
+        for (let x in interfaces) {
+            let arr = [];
+            let inf = interfaces[x];
+            for (let j=1; j<inf.length; j++) {
                 arr.push(inf[j].display);
             }
             out[x] = arr;
@@ -427,13 +427,13 @@ function bindInterfaces(path, interfaces) {
         res.json(out);
     });
     // setup handler
-    for (var each in interfaces) {
+    for (let each in interfaces) {
         if (each == '_') {
             continue;
         }
         (function (name, inf) {
-            var flag = false;
-            for (var j = 1; j < inf.length; j++) {
+            let flag = false;
+            for (let j = 1; j < inf.length; j++) {
                 if (inf[j].files) {
                     app.post(path + name, multipart(), function (req, res) {
                         _on(name, inf, req, res, req.body);
@@ -463,14 +463,14 @@ function bindInterfaces(path, interfaces) {
 }
 
 function call(funcname, params, callback) {
-    var pnames = interfaces[funcname];
+    let pnames = interfaces[funcname];
     if (undefined == pnames) {
         console.log('Invalid call', funcname);
         return;
     }
     params.push(callback);
     try {
-        var func = pnames[0];
+        let func = pnames[0];
         func.apply(null, params);
     }
     catch (e) {
@@ -499,7 +499,7 @@ function setup(pm, what, basedir, limit, nodefault) {
 
     if (!nodefault) {
         app.get('/', function (req, res, next) {
-            var file = basedir + '/public/' + what + '.html';
+            let file = basedir + '/public/' + what + '.html';
             res.sendFile(file, {}, function (err, arg) {
                 if (null == err) {
                     console.log(utils.now(), req.method + " " + req.url);
@@ -512,7 +512,7 @@ function setup(pm, what, basedir, limit, nodefault) {
         app.get('/favicon.ico', function (req, res) {
             console.log(utils.now(), req.method + " " + req.url);
 
-            var file = basedir + '/public/favicon.ico';
+            let file = basedir + '/public/favicon.ico';
             res.sendFile(file, {}, function (err, arg) {
                 if (null != err)
                     console.log('cannot find file: ', file);
@@ -522,7 +522,7 @@ function setup(pm, what, basedir, limit, nodefault) {
         app.get('/static/:fileName', function (req, res) {
             console.log(utils.now(), req.method + " " + req.url);
 
-            var fileName = req.params.fileName;
+            let fileName = req.params.fileName;
             res.sendFile(basedir + '/public/' + fileName, {}, function (err, arg) {
                 if (null != err)
                     console.log('cannot find file:' + fileName);
@@ -532,7 +532,7 @@ function setup(pm, what, basedir, limit, nodefault) {
         app.get('/bower_components/*', function (req, res) {
             console.log(utils.now(), req.method + " " + req.url);
 
-            var filePath = req.path;
+            let filePath = req.path;
             res.sendFile(basedir + filePath, {}, function (err, arg) {
                 if (null != err)
                     console.log('cannot find file:' + filePath);
@@ -549,7 +549,7 @@ module.exports = {
     bindInterfaces: bindInterfaces,
     bind: function (path) {
         if (path instanceof Array) {
-            for (var x in path) {
+            for (let x in path) {
                 bindInterfaces(path[x], interfaces);
             }
         }
@@ -565,7 +565,7 @@ module.exports = {
             return process.nextTick(callback, null, 0);
         }
         try {
-            var func = _main.func;
+            let func = _main.func;
             switch (_main.proto.length) {
             case 1:
                 func.call(null, callback);

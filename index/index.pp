@@ -3,15 +3,15 @@
 
 {{
     function array2Map(array, key, value) {
-        var map = {};
-        for (var i=0; i<array.length; i++) {
+        let map = {};
+        for (let i=0; i<array.length; i++) {
             map[array[i][key]] = array[i][value];
         }
         return map;
     }
 
-    var peter;
-    var groups = {};
+    let peter;
+    let groups = {};
 }}
 
 
@@ -30,9 +30,9 @@
             $callback null groups
 
         case 'Invalid pid \'@System::Index.1\' provided':
-            var fs = require('fs');
+            let fs = require('fs');
             // TODO::: fix file path
-            var data = fs.readFileSync(utils.replaceStringTail(__filename, 'js', 'ps'));
+            let data = fs.readFileSync(utils.replaceStringTail(__filename, 'js', 'ps'));
 
             $return peter.sm.update data
             =>  peter.sm.setAutoId '@System::Index' 0
@@ -57,13 +57,13 @@
     if (groups.hasOwnProperty(groupname)) {
         $callback null groups[groupname]
     }
-    var json = (null == groupdesc)
+    let json = (null == groupdesc)
              ? {name: groupname}
              : {name: groupname, desc: groupdesc};
 }}
     peter.createS '@System::Index' json
 =>  {{
-    var id = $@;
+    let id = $@;
     json = (null == groupdesc)
          ? {name: groupname, id: id}
          : {name: groupname, desc: groupdesc, id: id};

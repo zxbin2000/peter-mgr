@@ -2,24 +2,24 @@
  * Created by linshiding on 3/10/15.
  */
 
-var assert = require('assert');
-var utils = require('../utils/utils');
-var concurrent = require('../engine/concurrent');
+let assert = require('assert');
+let utils = require('../utils/utils');
+let concurrent = require('../engine/concurrent');
 
-var con = concurrent.create(200, 'Mongo Op');
+let con = concurrent.create(200, 'Mongo Op');
 
 function runMongoCmd(collection, cmd) {
-    var args = Array.prototype.slice.call(arguments);
-    var callback = args.pop();
+    let args = Array.prototype.slice.call(arguments);
+    let callback = args.pop();
     assert('function' == typeof callback);
-    var func = args[1];
+    let func = args[1];
 
     function callback_or_retry(err, arg) {
         if (null == err) {
             return callback(null, arg);
         }
         //console.log('Error:', err);
-        var str = err.toString();
+        let str = err.toString();
         if ('TypeError: Cannot read property \'maxBsonObjectSize\' of null' == str) {
             return setTimeout(function () {
                 console.log('retry', str);
@@ -55,7 +55,7 @@ function runMongoCmd(collection, cmd) {
 
 function add(collection, docid, name, value, callback) {
     assert(callback);
-    var inc = {};
+    let inc = {};
     inc[name] = value;
 
     runMongoCmd(collection, collection.findOneAndUpdate,
@@ -76,7 +76,7 @@ function create(collection, json, callback) {
 // fields can be an attribute name or an array of attributes
 function get(collection, docid, fields, callback) {
     assert(callback);
-    var query = {}
+    let query = {}
         , proj = {}
         , array = false;
 
@@ -87,10 +87,10 @@ function get(collection, docid, fields, callback) {
         break;
 
     case 'object':
-        var t = utils.isArray(fields);
-        for (var x in fields) {
-            var k = t ? fields[x] : x;
-            var v = t ? 1 : fields[x];
+        let t = utils.isArray(fields);
+        for (let x in fields) {
+            let k = t ? fields[x] : x;
+            let v = t ? 1 : fields[x];
             proj[k] = v;
         }
         array = true;
@@ -104,7 +104,7 @@ function get(collection, docid, fields, callback) {
         assert(false, 'wrong type of fields ' + typeof fields);
         break;
     }
-    var options = { projection: proj };
+    let options = { projection: proj };
     runMongoCmd(collection, collection.findOne, query, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
@@ -122,7 +122,7 @@ function get(collection, docid, fields, callback) {
 
 function manyGet(collection, docids, fields, callback) {
     assert(callback);
-    var query = {}
+    let query = {}
         , proj = {}
         , array = false;
 
@@ -133,7 +133,7 @@ function manyGet(collection, docids, fields, callback) {
         break;
 
     case 'object':
-        for (var x in fields) {
+        for (let x in fields) {
             proj[fields[x]] = 1;
         }
         array = true;
@@ -148,15 +148,15 @@ function manyGet(collection, docids, fields, callback) {
         break;
     }
 
-    var cursor = collection.find(query, proj);
+    let cursor = collection.find(query, proj);
     runMongoCmd(cursor, cursor.toArray, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (null == arg)
             return callback("Not existing", null);
 
-        var res = {};
-        for (var x in arg) {
+        let res = {};
+        for (let x in arg) {
             if (array) {
                 res[arg[x]["_id"]] = arg[x];
             }
@@ -171,13 +171,13 @@ function manyGet(collection, docids, fields, callback) {
 
 function getMany(collection, docids, fields, callback) {
     assert(callback);
-    var query = {}
+    let query = {}
         , proj = {}
         , array = false;
 
-    var map = {};
-    for (var x in docids) {
-        var id = docids[x];
+    let map = {};
+    for (let x in docids) {
+        let id = docids[x];
         if (map[id]) {
             map[id].push(+x);
         }
@@ -192,7 +192,7 @@ function getMany(collection, docids, fields, callback) {
         break;
 
     case 'object':
-        for (var x in fields) {
+        for (let x in fields) {
             proj[fields[x]] = 1;
         }
         array = true;
@@ -207,21 +207,21 @@ function getMany(collection, docids, fields, callback) {
         break;
     }
 
-    var cursor = collection.find(query, proj);
+    let cursor = collection.find(query, proj);
     runMongoCmd(cursor, cursor.toArray, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (null == arg)
             return callback("Not existing", null);
 
-        var res = [];
-        for (var x in arg) {
-            var obj = array
+        let res = [];
+        for (let x in arg) {
+            let obj = array
                     ? arg[x]
                     : (arg[x].hasOwnProperty(fields) ? arg[x][fields] : null);
 
-            var ords = map[arg[x]._id];
-            for (var i in ords) {
+            let ords = map[arg[x]._id];
+            for (let i in ords) {
                 res[ords[i]] = obj;
             }
         }
@@ -231,7 +231,7 @@ function getMany(collection, docids, fields, callback) {
 
 function set(collection, docid, json, options, callback) {
     assert(callback);
-    var cond;
+    let cond;
     if (options.cond) {
         cond = options.cond;
         cond._id = docid;
@@ -251,7 +251,7 @@ function set(collection, docid, json, options, callback) {
 
 function replace(collection, docid, name, json, options, callback) {
     assert(callback);
-    var cond = {_id: docid};
+    let cond = {_id: docid};
 
     cond[name] = {$exists: true};
     runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
@@ -265,7 +265,7 @@ function replace(collection, docid, name, json, options, callback) {
 
 function insert(collection, docid, name, json, options, callback) {
     assert(callback);
-    var cond = {_id: docid};
+    let cond = {_id: docid};
 
     cond[name] = {$exists: false};
     runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
@@ -280,11 +280,11 @@ function insert(collection, docid, name, json, options, callback) {
 function remove(collection, docid, fields, callback) {
     assert(fields);
     assert(callback);
-    var cond = {_id: docid};
-    var unset = {};
+    let cond = {_id: docid};
+    let unset = {};
     switch (typeof fields) {
     case 'object':
-        for (var x in fields) {
+        for (let x in fields) {
             unset[fields[x]] = 1;
         }
         break;
@@ -309,7 +309,7 @@ function remove(collection, docid, fields, callback) {
 
 function pushList(collection, docid, listname, elem, upsert, callback) {
     assert(callback);
-    var cond = {}
+    let cond = {}
         , add = {};
 
     cond['_id'] = docid;
@@ -327,7 +327,7 @@ function pushList(collection, docid, listname, elem, upsert, callback) {
 function pushMap(collection, docid, setname, keyname, elem, upsert, callback) {
     assert(callback);
     assert(elem.hasOwnProperty(keyname), 'elem.hasOwnProperty(keyname)');
-    var setwithkey = setname + '.' + keyname
+    let setwithkey = setname + '.' + keyname
         , cond = {}
         , add = {};
 
@@ -348,7 +348,7 @@ function pushMap(collection, docid, setname, keyname, elem, upsert, callback) {
 
 function pushSet(collection, docid, setname, elem, upsert, callback) {
     assert(callback);
-    var cond = {}
+    let cond = {}
         , add = {};
 
     cond[setname] = {$ne: elem};
@@ -370,7 +370,7 @@ function pushSet(collection, docid, setname, elem, upsert, callback) {
 function pop(collection, docid, setname, first, callback) {
     assert(callback);
 
-    var cond = {}
+    let cond = {}
         , update = {}
         , fields = {};
 
@@ -383,7 +383,7 @@ function pop(collection, docid, setname, first, callback) {
         if (null != err)
             return callback(err, arg);
 
-        var ret = arg[setname];
+        let ret = arg[setname];
         if (undefined == ret || ret.length < 1)
             return callback("Not existing", null);
 
@@ -397,7 +397,7 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
     assert(callback);
     assert(elem.hasOwnProperty(keyname), 'elem.hasOwnProperty(keyname)');
 
-    var setwithkey = setname + '.' + keyname
+    let setwithkey = setname + '.' + keyname
         , cond = {}
         , update = {};
 
@@ -407,7 +407,7 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
         update[setname + '.$'] = elem;
     }
     else {
-        for (var x in elem) {
+        for (let x in elem) {
             if (x != keyname)
                 update[setname + '.$.' + x] = elem[x];
         }
@@ -424,7 +424,7 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
 
 function replaceSet(collection, docid, setname, old, _new, callback) {
     assert(callback);
-    var cond = {}
+    let cond = {}
         , update = {};
 
     cond['_id'] = docid;
@@ -442,7 +442,7 @@ function replaceSet(collection, docid, setname, old, _new, callback) {
 
 function removeSet(collection, docid, setname, value, callback) {
     assert(callback);
-    var cond = {}
+    let cond = {}
         , update = {};
 
     cond['_id'] = docid;
@@ -461,7 +461,7 @@ function removeSet(collection, docid, setname, value, callback) {
 //replaceAll means to replace the whole element, otherwise only replace the attributes specified in $elem
 function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
     assert(callback);
-    var setwithkey = setname + '.' + keyname
+    let setwithkey = setname + '.' + keyname
         , cond = {}
         , update = {}
         , key = {};
@@ -483,16 +483,16 @@ function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
 //replaceAll means to replace the whole element, otherwise only replace the attributes specified in $elem
 function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callback) {
     assert(callback);
-    var cond = {}
+    let cond = {}
       , update = {};
 
     cond['_id'] = docid;
-    var setname = cont + '.' + index;
+    let setname = cont + '.' + index;
     if (replaceAll) {
         update[setname] = elem;
     }
     else {
-        for (var x in elem) {
+        for (let x in elem) {
             if (x != keyname)
                 update[setname + '.' + x] = elem[x];
         }
@@ -510,7 +510,7 @@ function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callba
 // cond: {name : value}
 function getElementsByCond(collection, docid, listname, cond, callback) {
     assert(callback);
-    var query = {}
+    let query = {}
         , proj = {};
 
     query['_id'] = docid;
@@ -530,7 +530,7 @@ function getElementsByCond(collection, docid, listname, cond, callback) {
 // cond: {name : value}
 function removeElementsByCond(collection, docid, listname, cond, callback) {
     assert(callback);
-    var query = {}
+    let query = {}
         , update = {};
 
     query['_id'] = docid;
@@ -553,7 +553,7 @@ function getElementsByRange(collection, docid, listname, range, callback) {
     assert(callback);
     assert(range instanceof Array);
 
-    var query = {}
+    let query = {}
         , proj = {};
 
     query['_id'] = docid;
@@ -570,7 +570,7 @@ function getElementsByRange(collection, docid, listname, range, callback) {
 }
 
 /**
- * var options = {
+ * let options = {
  *    limit: 20,
  *    sort: {title: 1} | title, // default 1
  *    skip: 10
@@ -584,14 +584,14 @@ function query(collection, cond, options, callback) {
     }
     assert('function' == typeof callback);
 
-    var project = {};
+    let project = {};
     if (options && options.projection) {
         project.projection = options.projection;
     }
-    var cursor = collection.find(cond, project);
+    let cursor = collection.find(cond, project);
     if (options) {
         if (options.sort) {
-            var sort;
+            let sort;
             if ('string' == typeof options.sort) {
                 sort = {};
                 sort[options.sort] = 1;
@@ -683,7 +683,7 @@ function aggregate(collection, cond, options, callback) {
         default :
             options = {};
     }
-    var cursor = collection.aggregate(cond, options);
+    let cursor = collection.aggregate(cond, options);
     runMongoCmd(cursor, cursor.toArray, callback);
 }
 
@@ -711,7 +711,7 @@ function findCursor(collection, cond, options, callback) {
         && (!utils.isNull(options) || !utils.isNull(callback))
         , "Wrong parameters in findCursor"
     );
-    var cursor = collection.find(cond, options);
+    let cursor = collection.find(cond, options);
     callback(null, cursor);
 }
 
