@@ -13,7 +13,6 @@ try {
 }
 schema = peter.sm;
 
-let Thenjs = require('thenjs');
 let readline = require('readline');
 let mongoaddr = utils.mongoAddrFromConf();
 
@@ -96,26 +95,23 @@ function run(arg) {
     });
 }
 
-Thenjs(function (cont) {
-    console.log("Fetching schemas...");
-    peter.bindDb(mongoaddr, { useNewUrlParser: true }, cont);
-}).then(function(cont, arg) {
-    console.log("Okay, %d schema\nLoading index...", arg);
-    index.init(peter, cont);
-}).then(function (cont, arg) {
-    console.log("Okay");
-    if (process.argv.length > 2) {
-        let args = Array.from(process.argv);
-        args.shift();
-        args.shift();
-        args.push(function (err, arg) {
-            process.exit(0);
-        });
-        return run(args);
+peter.bindDb(mongoaddr, { useNewUrlParser: true }, (error, args) => {
+    if(error) {
+        console.log('Error: ', error);
+        process.exit(-1);
     }
-    run();
-}).fail(function (cont, err, arg) {
-    console.log(err.stack);
-    console.error("Error: " + err);
-    process.exit(-1);
+    console.log("Okay, %d schema\nLoading index...", args);
+    index.init(peter, (error, args) => {
+        console.log("Okay");
+        if (process.argv.length > 2) {
+            let args = Array.from(process.argv);
+            args.shift();
+            args.shift();
+            args.push(function (err, arg) {
+                process.exit(0);
+            });
+            return run(args);
+        }
+        run();
+    });
 });

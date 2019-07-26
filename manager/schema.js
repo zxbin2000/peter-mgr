@@ -1,7 +1,7 @@
 /**
  * Created by linshiding on 3/10/15.
  */
-
+let Promise = require('bluebird');
 let Parser = require('./parser');
 let MongoOP = require('./mongoop');
 let Engine = require('../engine/engine');
