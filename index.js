@@ -1,11 +1,8 @@
-/**
- * Created by LJ on 11/22/15.
- */
-var g_all = {};
-var peter = require('./manager/peter');
+let g_all = {};
+let peter = require('./manager/peter');
 
 function createManager(key) {
-    if (undefined==key || null==key) {
+    if (undefined == key || null == key) {
         key = 0;
     }
     if (g_all.hasOwnProperty(key)) {
@@ -13,13 +10,13 @@ function createManager(key) {
         return g_all[key];
     }
 
-    var mgr = peter.createManager();
+    let mgr = peter.createManager();
     g_all[key] = mgr;
     return mgr;
 }
 
 function getManager(key) {
-    if (undefined==key || null==key) {
+    if (undefined == key || null == key) {
         key = 0;
     }
     if (!g_all[key]) {

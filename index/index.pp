@@ -4,7 +4,7 @@
 {{
     function array2Map(array, key, value) {
         let map = {};
-        for (let i=0; i<array.length; i++) {
+        for (let i = 0; i < array.length; i++) {
             map[array[i][key]] = array[i][value];
         }
         return map;

@@ -1,6 +1,7 @@
 /**
  * Created by linshiding on 3/10/15.
  */
+let Promise = require("bluebird");
 let Schema = require('./schema');
 let Parser = require('./parser');
 let MongoOP = require('./mongoop');
@@ -259,7 +260,6 @@ function destroy(pid, options, callback) {
     if (null == pid)
         return;
 
-    let self = this;
     MongoOP.destroy(_getCollection(self, pid), { _id: pid }, options, function (err, arg) {
         callback(err, null == err ? arg.result : arg);
     });
@@ -313,7 +313,7 @@ function add(pid, name, value, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, name, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
 
     if (attr.__type__!='Integer' && attr.__type__!='Number') {
@@ -522,12 +522,12 @@ function replace(pid, name, value, options, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     Schema.fillDefault(attr, value, true);
 
     let sch = ret[2];
-    if (attr.__zip__ && 1!=sch.__ziplist__.length) {
+    if (attr.__zip__ && 1 != sch.__ziplist__.length) {
         return process.nextTick(function () {
             callback("Zipped member '" + sch.__name__ + "' can't be replaced.", null);
         });
@@ -551,7 +551,7 @@ function insert(pid, name, value, options, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     Schema.fillDefault(attr, value, true);
 
@@ -722,8 +722,8 @@ function link(pid1, pid2, linkname, att1, att2, callback) {
     if (null == ret)
         return;
 
-    let pid1 = ret[0];
-    let pid2 = ret[1];
+    pid1 = ret[0];
+    pid2 = ret[1];
     let link1 = ret[2];
     let link2 = ret[3];
     let attr1 = ret[4];
@@ -745,8 +745,8 @@ function unlink(pid1, pid2, linkname, callback) {
     if (null == ret)
         return;
 
-    let pid1 = ret[0];
-    let pid2 = ret[1];
+    pid1 = ret[0];
+    pid2 = ret[1];
     let link1 = ret[2];
     let link2 = ret[3];
 
@@ -764,8 +764,8 @@ function isLinked(pid1, pid2, linkname, callback) {
     if (null == ret)
         return;
 
-    let pid1 = ret[0];
-    let pid2 = ret[1];
+    pid1 = ret[0];
+    pid2 = ret[1];
     let link1 = ret[2];
 
     MongoOP.getElementsByCond(_getCollection(self, pid1), pid1, link1, {peer: pid2}, function (err, arg) {
@@ -779,7 +779,7 @@ function getLinks(pid, linkname, callback) {
     if (null == ret)
         return;
 
-    let pid = ret[0];
+    pid = ret[0];
     MongoOP.get(_getCollection(self, pid), pid, linkname, callback);
 }
 
@@ -801,7 +801,7 @@ function push(pid, listname, elem, option, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, listname, elem, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     Schema.fillDefault(attr, elem, true);
 
@@ -847,7 +847,7 @@ function pop(pid, setname, first, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
 
     switch (attr.__type__) {
@@ -900,7 +900,7 @@ function replaceElementByKey(pid, setname, elem, replaceAll, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     if (replaceAll) {
         Schema.fillDefault(attr, elem, true);
@@ -918,7 +918,7 @@ function replaceElement(pid, setname, old, _new, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, _new, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     Schema.fillDefault(attr, _new, true);
 
@@ -937,7 +937,7 @@ function replaceElementByIndex(pid, contname, index, _new, replaceAll, callback)
     let ret = _checkSchemaAndCallback(self.sm, pid, contname, _new, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     if (replaceAll) {
         Schema.fillDefault(attr, _new, true);
@@ -951,7 +951,7 @@ function removeElement(pid, setname, elem, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
 
     assert(attr.__key__ == '', "keyname == '' in removeElement");
@@ -963,7 +963,7 @@ function removeElementsByCond(pid, cont_name, cond, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
 
     MongoOP.removeElementsByCond(_getCollection(self, pid), pid, cont_name, cond, callback);
 }
@@ -973,7 +973,7 @@ function removeElementByKey(pid, setname, key, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
 
     assert(attr.__key__ != '', "keyname != '' in removeElementByKey");
@@ -993,7 +993,7 @@ function getElementByKey(pid, setname, key, options, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
     let keyname = attr.__key__;
     assert(keyname != '');
@@ -1038,7 +1038,7 @@ function getElementByIndex(pid, listname, index, callback) {
     let ret = _checkSchemaAndCallback(self.sm, pid, listname, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
     let attr = ret[1];
 
     // TODO::
@@ -1049,7 +1049,7 @@ function getElementsByRange(pid, cont_name, range, callback) {
     let ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
     if (null == ret)
         return;
-    let pid = ret[0];
+    pid = ret[0];
 
     MongoOP.getElementsByRange(_getCollection(self, pid), pid, cont_name, range, callback);
 }
@@ -1592,7 +1592,7 @@ Manager.prototype = {
 module.exports = {
     createManager: function () {
         let mgr = new Manager();
-        return mgr;
+        return Promise.promisifyAll(mgr);
     },
 
     version: VERSION
