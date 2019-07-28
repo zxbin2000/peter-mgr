@@ -28,7 +28,7 @@
 <=  {{
     let schema = Parser.parse(Buffer.from(str));
     assert(schema);
-
+    //console.log('---', schema);
     let sch, each
       , num = 0;
     for (let x in schema) {

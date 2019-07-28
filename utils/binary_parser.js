@@ -139,7 +139,7 @@ BinaryParser.encodeInt = function encodeInt (data, bits, signed, forceBigEndian)
     data += max;
   }
 
-	for (let r = []; data; r[r.length] = String.fromCharCode(data % 256), data = Math.floor(data / 256));
+	for (var r = []; data; r[r.length] = String.fromCharCode(data % 256), data = Math.floor(data / 256));
 
 	for (bits = -(-bits >> 3) - r.length; bits--; r[r.length] = "\0");
 

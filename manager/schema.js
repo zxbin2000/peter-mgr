@@ -50,8 +50,7 @@ function genSchemaKey(sm, sch, callback) {
     Thenjs(function (cont) {
         // generate a unique key
         MongoOP.add(sm.collection, 0, 'lastkey', 1, cont);
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         key = arg.lastkey;
         let elem = {
             name: sch.__name__,
@@ -62,18 +61,15 @@ function genSchemaKey(sm, sch, callback) {
         };
         // try to set key of this schema
         MongoOP.pushMap(sm.collection, 0, 'schema', 'name', elem, true, cont);
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         callback(null, key);
     }, function (cont, err) {
         if (err == 'Already existed') {
             MongoOP.getElementsByCond(sm.collection, 0, 'schema', {name: sch.__name__}, cont);
-        }
-        else {
+        } else {
             callback(err, 0);
         }
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         key = arg[0].key;
         // TODO: update local schema from the DB, then we can check the compatibility
         callback(null, key);
@@ -98,15 +94,13 @@ function updateSchema(sm, sch, callback) {
 
         Thenjs(function (cont) {
             genSchemaKey(sm, sch, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             sch.__key__ = arg;
             MongoOP.add(sm.collection, 0, 'lastid', 1, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             sch._id = arg.lastid;
             //console.log("name: %s, key: %d, id: %d", sch.__name__, sch.__key__, sch._id);
-            sm.collection.insert({
+            sm.collection.insertOne({
                 _id: sch._id,
                 name: sch.__name__,
                 key: sch.__key__,
@@ -114,19 +108,16 @@ function updateSchema(sm, sch, callback) {
                 who: sch.__who__,
                 str: sch.__str__
             }, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             MongoOP.replaceMap(sm.collection, 0, 'schema', 'name',
                 {name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__},
                 false, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             addSchema(sm, sch, false);
             callback(null, sch);
 
             _runUpdateQ();
-        })
-        .fail(function (cont, err, result) {
+        }).fail(function (cont, err, result) {
             console.log("%s", err.stack);
             callback(err, null);
 

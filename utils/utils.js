@@ -3,6 +3,7 @@
  */
 'use strict';
 
+let _ = require('lodash');
 let moment = require('moment');
 let assert = require('assert');
 let sprintf = require('sprintf-js').sprintf;
@@ -12,6 +13,7 @@ let strip = require('strip-comment');
 let jsonic = require('jsonic');
 let schedule = require('node-schedule');
 let config = require('config');
+let split = require('./split');
 
 function timeString(time, format) {
     if (undefined == format) {
@@ -45,10 +47,6 @@ function stringify(obj) {
     return jsonic.stringify(obj);
 }
 
-function isNull(obj) {
-    return obj == null || obj !== obj;
-}
-
 function isArray(object){
     return  object && typeof object==='object' &&    
         typeof object.length==='number' &&  
@@ -58,15 +56,6 @@ function isArray(object){
 
 function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
-}
-
-function isEmpty(obj) {
-    if (obj) {
-        for (let key in obj) {
-            return !hasOwn(obj, key);
-        }
-    }
-    return true;
 }
 
 function clear(obj) {
@@ -792,8 +781,8 @@ module.exports = {
     translateTimeSpan: translateTimeSpan,
 
     isArray: isArray,
-    isNull: isNull,                // 判断是否为空，废弃，建议使用underscore
-    isEmpty: isEmpty,              // 判断是否为空值，废弃，建议使用underscore
+    isNull: _.isNull,
+    isEmpty: _.isEmpty,
     cmpObj: cmpObj,
     clear: clear,
     objLen: objLen,
@@ -835,5 +824,5 @@ module.exports = {
     repeat: repeat,
     runThenRepeat: runThenRepeat,
 
-    split: require('./split')
+    split: split
 };

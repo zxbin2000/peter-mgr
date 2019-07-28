@@ -240,6 +240,8 @@ function genPair(which, name, type) {
                     break;
                 }
             }
+            name = name.replace('[', '');
+            name = name.replace(']', '');
             break;
 
         case leftBraceCode:  // {
