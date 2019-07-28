@@ -265,7 +265,7 @@ function replace(collection, docid, name, json, options, callback) {
 
 function insert(collection, docid, name, json, options, callback) {
     assert(callback);
-    let cond = {_id: docid};
+    let cond = { _id: docid };
 
     cond[name] = {$exists: false};
     runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {

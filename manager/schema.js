@@ -76,6 +76,37 @@ function genSchemaKey(sm, sch, callback) {
     });
 }
 
+function _checkChange(sm, sch, callback) {
+    Thenjs(function(cont) {
+        MongoOP.getElementsByCond(sm.collection, 0, 'schema', { name: sch.__name__ }, cont);
+    }).then(function(cont, arg) {
+        let sm_id;
+        for(let i = 0; i < arg.length; i++) {
+          if(arg[i] && arg[i]['name'] === sch.__name__) {
+            sm_id = arg[i]['id'];
+            break;
+          }
+        }
+        if(typeof sm_id !== 'number' || sm_id <= 0) {
+            return process.nextTick(function () {
+                callback(null, true);
+            });
+        } else {
+          MongoOP.get(sm.collection, sm_id, {}, cont);
+        }
+    }).then(function(cont, arg) {
+        let _str_db = arg.str && arg.str.replace(/\s+/g, '');
+        let _str_ = sch.__str__ && sch.__str__.replace(/\s+/g, '');
+        return process.nextTick(function () {
+          callback(null, _str_db === _str_ ? false : true);
+        });
+    }).fail(function(cont, err) {
+        return process.nextTick(function () {
+            callback(null, 'No change');
+        });
+    });
+}
+
 let qUpdating = [];
 function updateSchema(sm, sch, callback) {
     assert(!sch.hasOwnProperty('_id') && !sch.hasOwnProperty('__key__'));
@@ -93,7 +124,15 @@ function updateSchema(sm, sch, callback) {
         callback = x[1];
 
         Thenjs(function (cont) {
-            genSchemaKey(sm, sch, cont);
+            _checkChange(sm, sch, cont);
+        }).then(function(cont, changed) {
+            if(typeof changed === 'boolean' && !changed) {
+                return process.nextTick(function () {
+                    callback(null, sch.__name__ + ' no change.');
+                });
+            } else {
+              genSchemaKey(sm, sch, cont);
+            }
         }).then(function (cont, arg) {
             sch.__key__ = arg;
             MongoOP.add(sm.collection, 0, 'lastid', 1, cont);
@@ -110,7 +149,7 @@ function updateSchema(sm, sch, callback) {
             }, cont);
         }).then(function (cont, arg) {
             MongoOP.replaceMap(sm.collection, 0, 'schema', 'name',
-                {name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__},
+                { name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__ },
                 false, cont);
         }).then(function (cont, arg) {
             addSchema(sm, sch, false);
@@ -144,8 +183,6 @@ function update(data, who, callback) {
     //console.log(Parser.print(schema));
 
     let q = []
-        , ret = 0
-        , haserr = false
         , map = {};
 
     for (let x in schema) {
@@ -162,17 +199,16 @@ function update(data, who, callback) {
         });
     }
 
-    Thenjs.eachSeries(q, function (cont, each) {
-        updateSchema(self, each, function (err, arg) {
-            if (null != err)
-                haserr = true;
-            map[each.__name__] = arg;
-            if (++ret == q.length) {
-                callback(haserr ? 'Not all updated' : null, map);
-            }
-            else {
-                cont();
-            }
+    Thenjs().eachSeries(q, function(cont, item) {
+      updateSchema(self, item, cont);
+    }).then(function(cont, args) {
+        return process.nextTick(function () {
+            callback(null, args);
+        });
+    }).fail(function(cont, error) {
+        console.log('Error: ', error);
+        return process.nextTick(function () {
+            callback('Update error', null);
         });
     });
 }
