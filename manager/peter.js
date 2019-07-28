@@ -401,73 +401,6 @@ function manyGet(pids, fields, options, callback) {
     });
 }
 
-function getMany(pids, fields, options, callback) {
-    assert(pids instanceof Array);
-    if (undefined == callback) {
-        if (undefined == options) {
-            assert('function' == typeof fields);
-            callback = fields;
-            fields = null;
-            options = {};
-        }
-        else {
-            assert('function' == typeof options);
-            callback = options;
-            if (fields instanceof Array || 'string' == typeof fields) {
-                options = {};
-            }
-            else {
-                options = fields ? fields : {};
-                fields = null;
-            }
-        }
-    }
-
-    let newpids = []
-        , key
-        , pid
-        , self = this;
-
-    if (0 == pids.length) {
-        return process.nextTick(function () {
-            callback(null, []);
-        });
-    }
-    for (let i = 0; i < pids.length; i++) {
-        pid = pids[i];
-        if (null == (pid = _checkPid(self.sm, pid, callback)))
-            return;
-        if (0 == i) {
-            key = pid.getSchemaKey();
-        }
-        else if (key != pid.getSchemaKey()) {
-            return process.nextTick(function () {
-                callback("Not same schema of pid '" + pid + "'.", null);
-            });
-        }
-        newpids.push(pid);
-    }
-
-    MongoOP.getMany(_getCollection(self, pid), newpids, fields, function (err, arg) {
-        if (!err && false != options.unzip) {
-            let n = 0;
-            let sch = self.sm.getByKey(key);
-
-            for (let x in arg) {
-                n ++;
-                Schema.unzipAny(sch, arg[x], function (err, ret) {
-                    if (--n == 0) {
-                        callback(null, arg);
-                    }
-                });
-            }
-            if (0 != n)
-                return;
-        }
-        callback(err, arg);
-    });
-}
-
 // options can be {upsert: true, cond: {}}
 function set(pid, json, options, callback) {
     if ('function' == typeof options) {
@@ -1283,14 +1216,14 @@ function command4Monitor(arg, rl) {
     return null;
 }
 
-function query(collName, cond, options, callback) {
+function find(collName, cond, options, callback) {
     let self = this;
     let collection = self.db.collection(collName);
     if ('function' == typeof options) {
         callback = options;
         options = {};
     }
-    MongoOP.query(collection, cond, options, function (err, arg) {
+    MongoOP.find(collection, cond, options, function (err, arg) {
         if (!err && false!=options.unzip) {
             let n = 0;
             let sch = self.sm.getByName(collName);
@@ -1538,15 +1471,12 @@ Manager.prototype = {
     manyGet: manyGet,   // args: pids (array), fields (optional), callback
                         // fields: can be an attribute name, or an array of attributes, or undefined/null
                         // ret: what specified in fields
-    // difference between manyGet & getMany: manyGet return {}, getMany return []
-    getMany: getMany,   // args: pids (array), fields (optional), callback
-                        // fields: can be an attribute name, or an array of attributes, or undefined/null
-                        // ret: an array of objects (same order with pids)
-    query: query,       // args: collName, query, options, callback
+    find: find,         // args: collName, query, options, callback
                         // query and options can be an {} but not null
                         // default options is sort. you can also use fields, skip, limit, sort in options.
                         // ret: what specified in fields
     findOne: findOne,
+    findUnion: findUnion,   // args: collName, field, cond, options, callback
     findOneAndUpdate: findOneAndUpdate,
     findOneAndReplace: findOneAndReplace,
     findOneAndDelete: findOneAndDelete,
@@ -1572,7 +1502,7 @@ Manager.prototype = {
 
     getElementByKey: getElementByKey,         // args: pid, setname, key, options (optional), callback
     getElementByIndex: getElementByIndex,     // TODO:
-    getElementsByRange: getElementsByRange,     // args: pid, cont_name, range:[from, number], callback
+    getElementsByRange: getElementsByRange,   // args: pid, cont_name, range:[from, number], callback
 
     link: link,         // args: pid1, pid2, linkname, att1 (optional), att2 (optional), callback
     isLinked: isLinked, // args: pid1, pid2, linkname, callback
@@ -1582,10 +1512,8 @@ Manager.prototype = {
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
     distinct: distinct,     // args: collName, field, cond, options, callback
-    findUnion: findUnion,   // args: collName, field, cond, options, callback
 
     isExpectedPeter: isExpectedPeter,         // args: pid name; return boolean
-
     command: command4Monitor
 };
 

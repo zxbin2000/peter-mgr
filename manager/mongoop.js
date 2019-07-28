@@ -569,49 +569,19 @@ function getElementsByRange(collection, docid, listname, range, callback) {
     });
 }
 
-/**
- * let options = {
- *    limit: 20,
- *    sort: {title: 1} | title, // default 1
- *    skip: 10
- *    iterator: func
- * }
- */
-function query(collection, cond, options, callback) {
+
+function find(collection, query, options, callback) {
     if('function' == typeof options) {
         callback = options;
         options = {};
     }
-    assert('function' == typeof callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(query)
+        && (!utils.isNull(options) || !utils.isNull(callback))
+        , "Wrong parameters in query"
+    );
 
-    let project = {};
-    if (options && options.projection) {
-        project.projection = options.projection;
-    }
-    let cursor = collection.find(cond, project);
-    if (options) {
-        if (options.sort) {
-            let sort;
-            if ('string' == typeof options.sort) {
-                sort = {};
-                sort[options.sort] = 1;
-            }
-            else {
-                sort = options.sort;
-            }
-            cursor = cursor.sort(sort);
-        }
-        if (options.skip) {
-            cursor = cursor.skip(options.skip);
-        }
-        if (options.limit) {
-            cursor = cursor.limit(options.limit);
-        }
-        if (options.iterator) {
-            return runMongoCmd(cursor, cursor.forEach, options.iterator, callback);
-        }
-    }
-
+    let cursor = collection.find(query, options);
     runMongoCmd(cursor, cursor.toArray, callback);
 }
 
@@ -722,7 +692,7 @@ module.exports = {
     get: get,
     manyGet: manyGet,
     getMany: getMany,
-    query: query,
+    find: find,
     findOne: findOne,
     findOneAndUpdate: findOneAndUpdate,
     findOneAndDelete: findOneAndDelete,
