@@ -5,7 +5,7 @@ SimpleUser: {                     // 简单用户信息
 }
 
 // 用户
-@User:  {
+@User: {
   *avatar: String,                // 用户头像
   *gender: Integer,               // 用户性别 0：未知、1：男、2：女
   real_name: String,              // 用户姓名
@@ -34,8 +34,8 @@ SimpleUser: {                     // 简单用户信息
 @Follow: {
   *user_id: @User,                // 用户标识
   nick_name: String,              // 用户昵称
-  [subscribe!userid]: SimpleUser,   // 关注列表
-  [follower!userid]: SimpleUser,    // 粉丝列表
+  [subscribe!userid]: SimpleUser, // 关注列表
+  [follower!userid]: SimpleUser,  // 粉丝列表
   create_time: Now,               // 入库时间
   update_time: Time               // 更新时间
 }

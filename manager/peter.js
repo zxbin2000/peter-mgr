@@ -27,22 +27,54 @@ function Manager() {
 
 // this function is copied from mongodb/objectid.js, but modify the 3 bytes of machineId to schemaKey
 ObjectID.prototype.generate = function (time) {
-    if ('number' != typeof time) {
-        time = parseInt(Date.now() / 1000, 10);
+    // if ('number' != typeof time) {
+    //     time = parseInt(Date.now() / 1000, 10);
+    // }
+
+    // let time4Bytes = BinaryParser.encodeInt(time, 32, true, true);
+    // /* for time-based ObjectID the bytes following the time will be zeroed */
+    // let schemaKey3Bytes = BinaryParser.encodeInt(_key, 24, true, true);
+    // let pid2Bytes = BinaryParser.fromShort(typeof process === 'undefined' ? Math.floor(Math.random() * 100000) : process.pid % 0xFFFF);
+    // let index3Bytes = BinaryParser.encodeInt(this.get_inc(), 24, false, true);
+    // return time4Bytes + schemaKey3Bytes + pid2Bytes + index3Bytes;
+
+    if ('number' !== typeof time) {
+      time = ~~(Date.now() / 1000);
     }
-
-    let time4Bytes = BinaryParser.encodeInt(time, 32, true, true);
-    /* for time-based ObjectID the bytes following the time will be zeroed */
-    let schemaKey3Bytes = BinaryParser.encodeInt(_key, 24, true, true);
-    let pid2Bytes = BinaryParser.fromShort(typeof process === 'undefined' ? Math.floor(Math.random() * 100000) : process.pid % 0xFFFF);
-    let index3Bytes = BinaryParser.encodeInt(this.get_inc(), 24, false, true);
-
-    return time4Bytes + schemaKey3Bytes + pid2Bytes + index3Bytes;
+  
+    // Use pid
+    var pid =
+      (typeof process === 'undefined' || process.pid === 1
+        ? Math.floor(Math.random() * 100000)
+        : process.pid) % 0xffff;
+    var inc = this.get_inc();
+    // Buffer used
+    var buffer = Buffer.alloc(12);
+    // Encode time
+    buffer[3] = time & 0xff;
+    buffer[2] = (time >> 8) & 0xff;
+    buffer[1] = (time >> 16) & 0xff;
+    buffer[0] = (time >> 24) & 0xff;
+    // Encode machine
+    buffer[6] = _key & 0xff;
+    buffer[5] = (_key >> 8) & 0xff;
+    buffer[4] = (_key >> 16) & 0xff;
+    // Encode pid
+    buffer[8] = pid & 0xff;
+    buffer[7] = (pid >> 8) & 0xff;
+    // Encode index
+    buffer[11] = inc & 0xff;
+    buffer[10] = (inc >> 8) & 0xff;
+    buffer[9] = (inc >> 16) & 0xff;
+    // Return the buffer
+    console.log('==id==', buffer.toString('hex'));
+    return buffer;
 };
 
 ObjectID.prototype.getSchemaKey = function () {
     if (undefined == this._key) {
-        this._key = BinaryParser.decodeInt(this.id.substring(4, 7), 24, true, true);
+        let buff = Buffer.from(this.toString(), 'hex');
+        this._key = (buff[4] << 16) + (buff[5] << 8) + buff[6];
     }
     return this._key;
 };
@@ -54,8 +86,10 @@ function collName(name) {
 
 function _getCollection(pm, pid) {
     assert(pid instanceof ObjectID, 'invalid objectid of ' + pid);
+
     let key = pid.getSchemaKey();
     let sch = pm.sm.getByKey(key);
+
     assert(undefined != sch && null != sch);
 
     return pm.db.collection(collName(sch.__name__));
@@ -63,7 +97,7 @@ function _getCollection(pm, pid) {
 
 function genPeterId(key) {
     _key = key;
-    let pid = new ObjectID;
+    let pid = new ObjectID();
     pid._key = key;
     return pid;
 }
