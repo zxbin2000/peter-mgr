@@ -67,7 +67,6 @@ ObjectID.prototype.generate = function (time) {
     buffer[10] = (inc >> 8) & 0xff;
     buffer[9] = (inc >> 16) & 0xff;
     // Return the buffer
-    console.log('==id==', buffer.toString('hex'));
     return buffer;
 };
 
@@ -153,6 +152,8 @@ function _create(id, name, json, options, callback) {
 }
 
 function create(name, json, callback) {
+    assert(typeof json === 'object', 'Invalid parameters');
+    
     let self = this;
     let sch = self.sm.validate(name, json);
     if (null == sch) {

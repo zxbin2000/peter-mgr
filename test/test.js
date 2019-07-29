@@ -49,7 +49,7 @@ describe('Peter', function() {
   });
 
   describe('#find()', function() {
-    it.only('should return an object', function() {
+    it('should return an object', function() {
       let user_id;
       return peter.createAsync('@User', user).then(function(args) {
         assert.equal(args.toString().length, 24);
@@ -58,7 +58,7 @@ describe('Peter', function() {
       }).then(function(args) {
         return peter.findOneAsync('@User', { 
           real_name: user.real_name 
-        }, { limit: 1, sort: { create_time: -1 } });
+        }, { sort: { create_time: -1 } });
       }).then(function(args) {
         assert.equal(user_id, args._id.toString());
         assert.equal(args.avatar, user.avatar);
@@ -66,15 +66,44 @@ describe('Peter', function() {
         return args;
       }).then(function(args) {
         let pid = user_id;
-        console.log(typeof pid, pid);
         return peter.destroyAsync(pid);
       }).then(function(args) {
-        console.log('----', args);
         assert.equal(args.n, 1);
         assert.equal(args.ok, 1);
       }).catch(function(error) {
         console.log('Error: ', error);
       });
+    });
+  });
+
+  describe('#findOne()', function() {
+    it('should return only one', function() {
+      let tasks = [
+        { avatar: 'test', gender: 0, real_name: 'test-find' },
+        { avatar: 'test', gender: 0, real_name: 'test-find' },
+        { avatar: 'test', gender: 0, real_name: 'test-find' },
+        { avatar: 'test', gender: 0, real_name: 'test-find' }
+      ];
+      return Promise.all(tasks.map(item => {
+        return peter.createAsync('@User', item);
+      })).then(args => {
+        assert.equal(args.length, 4);
+        return peter.findOneAsync('@User', { real_name: 'test-find' });
+      }).then(args => {
+        assert.equal(typeof args, 'object');
+        assert.equal(args.real_name, 'test-find');
+        return peter.findAsync('@User', { real_name: 'test-find' });
+      }).then(args => {
+        assert.equal(args.length, 4);
+        return Promise.all(args.map(item => {
+          return peter.destroyAsync(item._id);
+        }));
+      }).then(args => {
+        assert.equal(args.length, 4);
+      }).catch(error => {
+        console.log('Error: ', error);
+      });
+
     });
   });
 
