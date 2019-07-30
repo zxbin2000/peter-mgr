@@ -1255,12 +1255,12 @@ function command4Monitor(arg, rl) {
 function find(collName, cond, options, callback) {
     let self = this;
     let collection = self.db.collection(collName);
-    if ('function' == typeof options) {
+    if ('function' === typeof options) {
         callback = options;
         options = {};
     }
     MongoOP.find(collection, cond, options, function (err, arg) {
-        if (!err && false!=options.unzip) {
+        if (!err && false != options.unzip) {
             let n = 0;
             let sch = self.sm.getByName(collName);
             for (let x in arg) {

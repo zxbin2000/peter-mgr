@@ -7,7 +7,24 @@ const user = { avatar: 'default', gender: 1, real_name: 'test-peter' };
 
 describe('Peter', function() {
   before(function() {
-    return peter.bindDbAsync(config.get('schema'));
+    return peter.bindDbAsync(config.get('schema')).then(args => {
+      let tasks = [];
+      for(let i = 0; i < 10; i++) {
+        let user = {
+          avatar: 'test-peter-user-avatar-' + i,
+          gender: i % 2,
+          real_name: 'test-peter-user-' + i,
+          is_deleted: false
+        };
+        tasks.push(peter.createAsync('@User', user));
+      }
+      return Promise.all(tasks);
+    }).then(args => {
+      should.equal(args.length, 10);
+    }).catch(error => {
+      console.log('TestError: ', error);
+      should.null(error);
+    });
   });
 
   beforeEach(function() {
@@ -16,7 +33,16 @@ describe('Peter', function() {
   });
 
   after(function() {
-    process.exit(0);
+    return peter.findAsync('@User', { is_deleted: false }).then(args => {
+      return Promise.all(args.map(item => {
+        return peter.destroyAsync(item._id);
+      }));
+    }).then(args => {
+      should(args.length).be.aboveOrEqual(10);
+      process.exit(0);
+    }).catch(error => {
+      console.log('TestError: ', error);
+    });
   });
 
   describe('#create()', function() {
@@ -219,6 +245,28 @@ describe('Peter', function() {
       }).then(args => {
         should.equal(args.n, 1);
         should.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('TestError: ', error);
+        should.null(error);
+      });
+    });
+  });
+
+  describe('#count()', () => {
+    it('单测 count 方法', () => {
+      return peter.countAsync('@User', {}).then(args => {
+        args.should.be.above(0);
+      }).catch(error => {
+        console.log('TestError: ', error);
+        should.null(error);
+      });
+    });
+  });
+
+  describe('#distinct()', () => {
+    it('单测 distinct 方法', () => {
+      return peter.distinctAsync('@User', 'real_name').then(args => {
+        should.equal(args.length, 10);
       }).catch(error => {
         console.log('TestError: ', error);
         should.null(error);
