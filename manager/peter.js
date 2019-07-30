@@ -1394,6 +1394,15 @@ function findOneAndReplace(collName, filter, replacement, options, callback) {
       callback = options;
       options = {};
     }
+    let sch = self.sm.validate(collName, replacement);
+    if (null == sch) {
+        return process.nextTick(function () {
+            callback('Schema check error: ' + collName, null);
+        });
+    }
+    Schema.fillDefault(sch, replacement);
+    replacement._schemaid = sch.__id__;
+    options.returnOriginal = false;
     MongoOP.findOneAndReplace(collection, filter, replacement, options, function (err, arg) {
         if (!err) {
             let n = 0;

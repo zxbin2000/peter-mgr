@@ -1,6 +1,7 @@
 const config = require('config');
 const peter = require('../index').getManager();
 const assert = require('assert');
+const should = require('should');
 
 const user = { avatar: 'default', gender: 1, real_name: 'test-peter' };
 
@@ -19,7 +20,7 @@ describe('Peter', function() {
   });
 
   describe('#create()', function() {
-    it('should return peter id', function() {
+    it('单测 create 方法', function() {
       return peter.createAsync('@User', user).then(function(args) {
         assert.equal(args.toString().length, 24);
         return args;
@@ -35,7 +36,7 @@ describe('Peter', function() {
   });
 
   describe('#createS()', function() {
-    it('should return sequence number', function() {
+    it('单测 createS 方法', function() {
       return peter.createSAsync('@User', user).then(function(args) {
         assert(parseInt(args.toString()) > 0);
         return args;
@@ -49,7 +50,7 @@ describe('Peter', function() {
   });
 
   describe('#find()', function() {
-    it('should return an object', function() {
+    it('单测 find 方法', function() {
       let user_id;
       return peter.createAsync('@User', user).then(function(args) {
         assert.equal(args.toString().length, 24);
@@ -77,7 +78,7 @@ describe('Peter', function() {
   });
 
   describe('#findOne()', function() {
-    it('should return only one', function() {
+    it('单测 findOne 方法', function() {
       let tasks = [
         { avatar: 'test', gender: 0, real_name: 'test-find' },
         { avatar: 'test', gender: 0, real_name: 'test-find' },
@@ -108,7 +109,7 @@ describe('Peter', function() {
   });
 
   describe('#get()', function() {
-    it('should get prop', function() {
+    it('单测 get 方法', function() {
       return peter.createAsync('@User', user).then(args => {
         assert.equal(args.toString().length, 24);
         return peter.getAsync(args);
@@ -127,7 +128,7 @@ describe('Peter', function() {
   });
 
   describe('#remove()', function() {
-    it('should remove prop', function() {
+    it('单测 remove 方法', function() {
       return peter.createAsync('@User', user).then(args => {
         return peter.removeAsync(args, 'real_name');
       }).then(args => {
@@ -148,7 +149,7 @@ describe('Peter', function() {
   });
 
   describe('#findOneAndUpdate()', function() {
-    it.only('should return only one', function() {
+    it('单测 findOneAndUpdate 方法', function() {
       let nval = { avatar: 'default', gender: "1", real_name: 'test-find-update' };
       return peter.findOneAndUpdateAsync('@User', { 
         real_name: user.real_name
@@ -165,6 +166,62 @@ describe('Peter', function() {
         assert.equal(args.ok, 1);
       }).catch(error => {
         console.log('Error: ', error);
+      });
+    });
+  });
+
+  describe('#findOneAndDelete()', function() {
+    it('单测 findOneAndDelete 方法', () => {
+      return peter.createAsync('@User', user).then(args => {
+        return peter.findOneAndDeleteAsync('@User', { real_name: user.real_name });
+      }).then(args => {
+        assert.equal(args._id.toString(), user._id);
+      }).catch(error => {
+        console.log('Error: ', error);
+      });
+    });
+  });
+
+  describe('#findOneAndReplace()', () => {
+    it('测试 Schema 检查是否启用', () => {
+      return peter.createAsync('@User', user).then(args => {
+        return peter.findOneAndReplaceAsync('@User', { 
+          real_name: user.real_name 
+        }, {
+          avatar: 'avatar-1',
+          gender: 1,
+          not_exist: "not exist"
+        });
+      }).catch(error => {
+        should.equal(error.name, 'Error');
+        should.equal(error.message, 'Schema check error: @User');
+        peter.destroyAsync(user._id);
+      });
+    });
+
+    it('测试 Replace 是否成功', () => {
+      let real_name = 'test-find-replace';
+      let avatar = 'test-avatart-2';
+      return peter.createAsync('@User', user).then(args => {
+        return peter.findOneAndReplaceAsync('@User', {
+          real_name: user.real_name
+        }, {
+          avatar: avatar,
+          gender: 1,
+          real_name: real_name
+        });
+      }).then(args => {
+        should.exist(args._schemaid);
+        should.exist(args.create_time);
+        should.equal(args.real_name, real_name);
+        should.equal(args.avatar, avatar);
+        return peter.destroyAsync(args._id);
+      }).then(args => {
+        should.equal(args.n, 1);
+        should.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('TestError: ', error);
+        should.null(error);
       });
     });
   });
