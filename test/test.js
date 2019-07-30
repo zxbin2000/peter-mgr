@@ -107,4 +107,66 @@ describe('Peter', function() {
     });
   });
 
+  describe('#get()', function() {
+    it('should get prop', function() {
+      return peter.createAsync('@User', user).then(args => {
+        assert.equal(args.toString().length, 24);
+        return peter.getAsync(args);
+      }).then(args => {
+        assert.equal(args.avatar, user.avatar);
+        assert.equal(args.gender, user.gender);
+        assert.equal(args.real_name, user.real_name);
+        return peter.destroyAsync(args._id);
+      }).then(args => {
+        assert.equal(args.n, 1);
+        assert.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('Error: ', error);
+      });
+    });
+  });
+
+  describe('#remove()', function() {
+    it('should remove prop', function() {
+      return peter.createAsync('@User', user).then(args => {
+        return peter.removeAsync(args, 'real_name');
+      }).then(args => {
+        assert.equal(args.n, 1);
+        assert.equal(args.ok, 1);
+        return peter.getAsync(user._id);
+      }).then(args => {
+        assert.equal(args.real_name, null);
+        assert.equal(args._id.toString(), user._id.toString());
+        return peter.destroyAsync(user._id);
+      }).then(args => {
+        assert.equal(args.n, 1);
+        assert.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('Error: ', error);
+      });
+    });
+  });
+
+  describe('#findOneAndUpdate()', function() {
+    it.only('should return only one', function() {
+      let nval = { avatar: 'default', gender: "1", real_name: 'test-find-update' };
+      return peter.findOneAndUpdateAsync('@User', { 
+        real_name: user.real_name
+      }, nval, { upsert: true }).then(args => {
+        assert.equal(args._id.toString().length, 24);
+        assert.equal(args.real_name, nval.real_name);
+        return peter.getAsync(args._id);
+      }).then(args => {
+        assert.equal(args._id.toString().length, 24);
+        assert.equal(args.real_name, nval.real_name);
+        return peter.destroyAsync(args._id);
+      }).then(args => {
+        assert.equal(args.n, 1);
+        assert.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('Error: ', error);
+      });
+    });
+  });
+
 });

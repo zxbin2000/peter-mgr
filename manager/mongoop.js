@@ -280,30 +280,31 @@ function insert(collection, docid, name, json, options, callback) {
 function remove(collection, docid, fields, callback) {
     assert(fields);
     assert(callback);
+
     let cond = {_id: docid};
     let unset = {};
     switch (typeof fields) {
-    case 'object':
-        for (let x in fields) {
-            unset[fields[x]] = 1;
-        }
-        break;
+      case 'object':
+          for (let x in fields) {
+              unset[fields[x]] = 1;
+          }
+          break;
 
-    case 'string':
-        unset[fields] = '';
-        break;
+      case 'string':
+          unset[fields] = '';
+          break;
 
-    default:
-        assert(false, "wrong type of fields");
-        break;
-    }
+      default:
+          assert(false, "wrong type of fields");
+          break;
+      }
 
     runMongoCmd(collection, collection.updateOne, cond, {$unset: unset}, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
             return callback("Not existing", null);
-        callback(null, arg);
+        callback(null, arg.result);
     });
 }
 
@@ -525,7 +526,6 @@ function getElementsByCond(collection, docid, listname, cond, callback) {
         callback(null, arg[listname]);
     });
 }
-
 
 // cond: {name : value}
 function removeElementsByCond(collection, docid, listname, cond, callback) {

@@ -360,8 +360,9 @@ function add(pid, name, value, callback) {
 
 // fields can be an attribute name or an array of attributes
 function remove(pid, fields, callback) {
-    let self = this;
     assert('function' == typeof callback);
+
+    let self = this;
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
@@ -1313,22 +1314,36 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
     assert('function' == typeof callback, 'callback is not a function');
     
     let self = this;
-    let $set = update['$set'];
-    if($set && options.upsert) {
+    let operators = {};
+    let $set = {};
+    for(let prop in update) {
+        if(update.hasOwnProperty(prop) && !prop.startsWith('$')) {
+            $set[prop] = update[prop];
+        } else {
+            operators[prop] = update[prop];
+        }
+    }
+    
+    if(Object.keys($set).length > 0) {
         let sch = self.sm.validate(collName, $set);
         if (null == sch) {
             return process.nextTick(function () {
                 callback('Schema check error: ' + collName, null);
             });
         }
-        Schema.fillDefault(sch, $set);
-        let id = genPeterId(sch.__key__);
-        //$set['_id'] = id;
-        $set['_schemaid'] = sch.__id__;
-        update['$set'] = $set;
+        if(options.upsert) {
+            Schema.fillDefault(sch, $set);
+            operators['$setOnInsert'] = { 
+                _id: genPeterId(sch.__key__),
+                _schemaid: sch.__id__
+            };
+            options['returnOriginal'] = false;
+        }
+        operators['$set'] = $set;
     }
-    MongoOP.findOneAndUpdate(self.db.collection(collName), filter, update, options, function (err, arg) {
-        if (!err) {
+    
+    MongoOP.findOneAndUpdate(self.db.collection(collName), filter, operators, options, function (err, arg) {
+      if (!err) {
             let n = 0;
             let sch = self.sm.getByName(collName);
             for (let x in arg) {
