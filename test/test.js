@@ -153,6 +153,27 @@ describe('Peter', function() {
     });
   });
 
+  describe('#set()', () => {
+    it('单测 set 方法', () => {
+      let user_id;
+      return peter.findOneAsync('@User', { is_deleted: false }).then(args => {
+        should.exist(args._id);
+        user_id = args._id;
+        return peter.setAsync(args._id, { details: 'test-set-detail' });
+      }).then(args => {
+        should.equal(args.n, 1);
+        should.equal(args.ok, 1);
+        return peter.getAsync(user_id);
+      }).then(args => {
+        should.exist(args);
+        should.exist(args.details);
+      }).catch(error => {
+        console.log('TestError: ', error);
+        should.not.exist(error);
+      });
+    });
+  });
+
   describe('#remove()', function() {
     it('单测 remove 方法', function() {
       return peter.createAsync('@User', user).then(args => {

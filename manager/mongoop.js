@@ -245,7 +245,7 @@ function set(collection, docid, json, options, callback) {
             return callback(err, arg);
         if (0 == arg.result.n)
             return callback("Not existing", null);
-        callback(null, arg);
+        callback(null, arg.result);
     });
 }
 
