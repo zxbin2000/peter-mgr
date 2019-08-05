@@ -203,7 +203,7 @@ describe('Peter', function() {
   });
 
   describe('#findOneAndUpdate()', function() {
-    it('单测 findOneAndUpdate 方法', function() {
+    it.only('单测 findOneAndUpdate 方法', function() {
       let nval = { avatar: 'default', gender: "1", real_name: 'test-find-update' };
       return peter.findOneAndUpdateAsync('@User', { 
         real_name: user.real_name
@@ -220,7 +220,9 @@ describe('Peter', function() {
       }).then(args => {
         assert.equal(args._id.toString().length, 24);
         assert.equal(args.real_name, nval.real_name);
-        return peter.getAsync(args._id);
+        return peter.findOneAndUpdateAsync('@User', {
+          real_name: nval.real_name
+        }, { profile: 'test-profile' });
       }).then(args => {
         assert.equal(args._id.toString().length, 24);
       }).catch(error => {

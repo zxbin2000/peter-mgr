@@ -1325,23 +1325,31 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
     }
     
     if(Object.keys($set).length > 0) {
-        let sch = self.sm.validate(collName, $set);
-        if (null == sch) {
-            return process.nextTick(function () {
-                callback('Schema check error: ' + collName, null);
-            });
-        }
         if(options.upsert) {
+            let sch = self.sm.validate(collName, $set);
+            if (null == sch) {
+                return process.nextTick(function () {
+                    callback('Schema check error: ' + collName, null);
+                });
+            }
             Schema.fillDefault(sch, $set);
             operators['$setOnInsert'] = { 
                 _id: genPeterId(sch.__key__),
                 _schemaid: sch.__id__
             };
             options['returnOriginal'] = false;
+        } else {
+            let sch = self.sm.getByName(collName);
+            if (!Parser.checkElement(sch, $set)) {
+                return process.nextTick(function () {
+                    callback("Schema '" + sch.__name__ + "' check fail: " + JSON.stringify(json), null);
+                });
+            }
+            options['returnOriginal'] = false;
         }
         operators['$set'] = $set;
     }
-    
+    console.log('=====', filter, operators, options);
     MongoOP.findOneAndUpdate(self.db.collection(collName), filter, operators, options, function (err, arg) {
       if (!err) {
             let n = 0;
