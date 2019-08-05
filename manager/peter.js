@@ -1317,6 +1317,8 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
     for(let prop in update) {
         if(update.hasOwnProperty(prop) && !prop.startsWith('$')) {
             $set[prop] = update[prop];
+        } else if(prop == '$set') {
+            $set = update[prop];
         } else {
             operators[prop] = update[prop];
         }

@@ -167,6 +167,13 @@ describe('Peter', function() {
       }).then(args => {
         should.exist(args);
         should.exist(args.details);
+        return peter.createAsync('@UserSession', { openid: 'test-openid' });
+      }).then(args => {
+        console.log('args=', args, user_id);
+        return peter.setAsync(args, { user_id: user_id });
+      }).then(args => {
+        should.equal(args.n, 1);
+        should.equal(args.ok, 1);
       }).catch(error => {
         console.log('TestError: ', error);
         should.not.exist(error);
@@ -207,12 +214,18 @@ describe('Peter', function() {
       }).then(args => {
         assert.equal(args._id.toString().length, 24);
         assert.equal(args.real_name, nval.real_name);
-        return peter.destroyAsync(args._id);
+        return peter.findOneAndUpdateAsync('@User', {
+          real_name: user.real_name
+        }, { $set: nval }, { upsert: true });
       }).then(args => {
-        assert.equal(args.n, 1);
-        assert.equal(args.ok, 1);
+        assert.equal(args._id.toString().length, 24);
+        assert.equal(args.real_name, nval.real_name);
+        return peter.getAsync(args._id);
+      }).then(args => {
+        assert.equal(args._id.toString().length, 24);
       }).catch(error => {
         console.log('Error: ', error);
+        assert(error === null);
       });
     });
   });
@@ -287,7 +300,7 @@ describe('Peter', function() {
   describe('#distinct()', () => {
     it('单测 distinct 方法', () => {
       return peter.distinctAsync('@User', 'real_name').then(args => {
-        should.equal(args.length, 10);
+        should(args.length).be.aboveOrEqual(10);
       }).catch(error => {
         console.log('TestError: ', error);
         should.null(error);
