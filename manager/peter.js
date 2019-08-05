@@ -1349,7 +1349,7 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
         }
         operators['$set'] = $set;
     }
-    console.log('=====', filter, operators, options);
+    
     MongoOP.findOneAndUpdate(self.db.collection(collName), filter, operators, options, function (err, arg) {
       if (!err) {
             let n = 0;
