@@ -1,23 +1,24 @@
 /**
  * Created by linshiding on 3/10/15.
  */
-var Schema = require('./schema');
-var Parser = require('./parser');
-var MongoOP = require('./mongoop');
-var utils = require('../utils/utils');
-var Engine = require('../engine/engine');
-var assert = require('assert');
-var ObjectID = require('mongodb').ObjectID;
-var BinaryParser = require('../utils/binary_parser').BinaryParser;
-var fs = require('fs');
-var sprintf = require('sprintf-js').sprintf;
-var ascii = require('../utils/ascii');
-var MongoClient = require('mongodb').MongoClient;
-var pjson = require('../package.json');
-var _ = require('lodash');
+let Promise = require("bluebird");
+let Schema = require('./schema');
+let Parser = require('./parser');
+let MongoOP = require('./mongoop');
+let utils = require('../utils/utils');
+let Engine = require('../engine/engine');
+let assert = require('assert');
+let ObjectID = require('mongodb').ObjectID;
+let BinaryParser = require('../utils/binary_parser').BinaryParser;
+let fs = require('fs');
+let sprintf = require('sprintf-js').sprintf;
+let ascii = require('../utils/ascii');
+let MongoClient = require('mongodb').MongoClient;
+let pjson = require('../package.json');
+let _ = require('lodash');
 
-var VERSION = pjson.version;
-var _key;
+let VERSION = pjson.version;
+let _key;
 
 function Manager() {
     this.db = null;
@@ -26,35 +27,68 @@ function Manager() {
 
 // this function is copied from mongodb/objectid.js, but modify the 3 bytes of machineId to schemaKey
 ObjectID.prototype.generate = function (time) {
-    if ('number' != typeof time) {
-        time = parseInt(Date.now() / 1000, 10);
+    // if ('number' != typeof time) {
+    //     time = parseInt(Date.now() / 1000, 10);
+    // }
+
+    // let time4Bytes = BinaryParser.encodeInt(time, 32, true, true);
+    // /* for time-based ObjectID the bytes following the time will be zeroed */
+    // let schemaKey3Bytes = BinaryParser.encodeInt(_key, 24, true, true);
+    // let pid2Bytes = BinaryParser.fromShort(typeof process === 'undefined' ? Math.floor(Math.random() * 100000) : process.pid % 0xFFFF);
+    // let index3Bytes = BinaryParser.encodeInt(this.get_inc(), 24, false, true);
+    // return time4Bytes + schemaKey3Bytes + pid2Bytes + index3Bytes;
+
+    if ('number' !== typeof time) {
+      time = ~~(Date.now() / 1000);
     }
-
-    var time4Bytes = BinaryParser.encodeInt(time, 32, true, true);
-    /* for time-based ObjectID the bytes following the time will be zeroed */
-    var schemaKey3Bytes = BinaryParser.encodeInt(_key, 24, true, true);
-    var pid2Bytes = BinaryParser.fromShort(typeof process === 'undefined' ? Math.floor(Math.random() * 100000) : process.pid % 0xFFFF);
-    var index3Bytes = BinaryParser.encodeInt(this.get_inc(), 24, false, true);
-
-    return time4Bytes + schemaKey3Bytes + pid2Bytes + index3Bytes;
+  
+    // Use pid
+    var pid =
+      (typeof process === 'undefined' || process.pid === 1
+        ? Math.floor(Math.random() * 100000)
+        : process.pid) % 0xffff;
+    var inc = this.get_inc();
+    // Buffer used
+    var buffer = Buffer.alloc(12);
+    // Encode time
+    buffer[3] = time & 0xff;
+    buffer[2] = (time >> 8) & 0xff;
+    buffer[1] = (time >> 16) & 0xff;
+    buffer[0] = (time >> 24) & 0xff;
+    // Encode machine
+    buffer[6] = _key & 0xff;
+    buffer[5] = (_key >> 8) & 0xff;
+    buffer[4] = (_key >> 16) & 0xff;
+    // Encode pid
+    buffer[8] = pid & 0xff;
+    buffer[7] = (pid >> 8) & 0xff;
+    // Encode index
+    buffer[11] = inc & 0xff;
+    buffer[10] = (inc >> 8) & 0xff;
+    buffer[9] = (inc >> 16) & 0xff;
+    // Return the buffer
+    return buffer;
 };
 
 ObjectID.prototype.getSchemaKey = function () {
     if (undefined == this._key) {
-        this._key = BinaryParser.decodeInt(this.id.substring(4, 7), 24, true, true);
+        let buff = Buffer.from(this.toString(), 'hex');
+        this._key = (buff[4] << 16) + (buff[5] << 8) + buff[6];
     }
     return this._key;
 };
 
 function collName(name) {
-    var n = name.search(/\./);
+    let n = name.search(/\./);
     return -1 == n ? name : name.substring(0, n);
 }
 
 function _getCollection(pm, pid) {
     assert(pid instanceof ObjectID, 'invalid objectid of ' + pid);
-    var key = pid.getSchemaKey();
-    var sch = pm.sm.getByKey(key);
+
+    let key = pid.getSchemaKey();
+    let sch = pm.sm.getByKey(key);
+
     assert(undefined != sch && null != sch);
 
     return pm.db.collection(collName(sch.__name__));
@@ -62,7 +96,7 @@ function _getCollection(pm, pid) {
 
 function genPeterId(key) {
     _key = key;
-    var pid = new ObjectID;
+    let pid = new ObjectID();
     pid._key = key;
     return pid;
 }
@@ -84,8 +118,8 @@ function _create(id, name, json, options, callback) {
         options = {};
     }
 
-    var self = this;
-    var sch = self.sm.validate(name, json);
+    let self = this;
+    let sch = self.sm.validate(name, json);
     if (null == sch) {
         return process.nextTick(function () {
             callback('Schema check failed', name);
@@ -118,8 +152,10 @@ function _create(id, name, json, options, callback) {
 }
 
 function create(name, json, callback) {
-    var self = this;
-    var sch = self.sm.validate(name, json);
+    assert(typeof json === 'object', 'Invalid parameters');
+    
+    let self = this;
+    let sch = self.sm.validate(name, json);
     if (null == sch) {
         return process.nextTick(function () {
             callback('Schema check error: ' + name, null);
@@ -127,7 +163,7 @@ function create(name, json, callback) {
     }
     Schema.fillDefault(sch, json);
 
-    var id = genPeterId(sch.__key__);
+    let id = genPeterId(sch.__key__);
     json['_id'] = id;
     json['_schemaid'] = sch.__id__;
 
@@ -139,8 +175,8 @@ function create(name, json, callback) {
 }
 
 function createS(name, json, callback) {
-    var self = this;
-    var sch = self.sm.validate(name, json);
+    let self = this;
+    let sch = self.sm.validate(name, json);
     if (null == sch) {
         return process.nextTick(function () {
             callback('Schema check error: ' + name, null);
@@ -153,8 +189,8 @@ function createS(name, json, callback) {
             return callback(err, arg);
         }
 
-        var id = arg[name];
-        var str = sprintf("%024d", id);
+        let id = arg[name];
+        let str = sprintf("%024d", id);
         json['_id'] = new ObjectID(str);
         json['_schemaid'] = sch.__id__;
 
@@ -181,8 +217,8 @@ function isExpectedPeter(pid, name) {
     }
 
     if (pid instanceof ObjectID) {
-        var key = pid.getSchemaKey();
-        var sch = this.sm.getByKey(key);
+        let key = pid.getSchemaKey();
+        let sch = this.sm.getByKey(key);
         return sch && sch.__name__ === name;
     }
 
@@ -197,11 +233,11 @@ function _checkPid(sm, pid, callback) {
         return new ObjectID(pid);
     }
     if ('string' === typeof pid) {
-        var n = pid.search(/\./);
+        let n = pid.search(/\./);
         if (-1 != n) {
-            var schname = pid.substring(0, n);
-            var id = pid.substring(n + 1, pid.length);
-            var sch = sm.getByName(schname);
+            let schname = pid.substring(0, n);
+            let id = pid.substring(n + 1, pid.length);
+            let sch = sm.getByName(schname);
             if (null != sch) {
                 pid = Parser.isValidPeterId(id)
                     ? new ObjectID(id)
@@ -222,7 +258,7 @@ function _checkSchemaAndCallback(sm, pid, attrname, json, callback) {
     if (null == pid)
         return;
 
-    var sch = sm.getByKey(pid.getSchemaKey());
+    let sch = sm.getByKey(pid.getSchemaKey());
     if (null == sch) {
         process.nextTick(function () {
             callback("Invalid pid '" + pid + "' provided", null);
@@ -230,7 +266,7 @@ function _checkSchemaAndCallback(sm, pid, attrname, json, callback) {
         return null;
     }
 
-    var attr = Parser.findAttribute(sch, attrname);
+    let attr = Parser.findAttribute(sch, attrname);
     if (null == attr) {
         process.nextTick(function () {
             callback("Invalid attr name '" + attrname + "' provided", null);
@@ -254,12 +290,11 @@ function destroy(pid, options, callback) {
     }
     assert('function' == typeof callback, 'Invalid parameters');
 
-    var self = this;
+    let self = this;
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
 
-    var self = this;
     MongoOP.destroy(_getCollection(self, pid), { _id: pid }, options, function (err, arg) {
         callback(err, null == err ? arg.result : arg);
     });
@@ -267,7 +302,7 @@ function destroy(pid, options, callback) {
 
 function unzipAny(sch, arg, options, callback) {
     if (false != options.unzip) {
-        //var sch = self.sm.getByKey(pid.getSchemaKey());
+        //let sch = self.sm.getByKey(pid.getSchemaKey());
         Schema.unzipAny(sch, arg, callback);
     }
     else {
@@ -277,7 +312,7 @@ function unzipAny(sch, arg, options, callback) {
 
 // fields is optional, it can be an attribute name or an array of attributes
 function get(pid, fields, options, callback) {
-    var self = this;
+    let self = this;
     if ('function' == typeof fields) {
         callback = fields;
         fields = {};
@@ -290,12 +325,10 @@ function get(pid, fields, options, callback) {
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
-
     MongoOP.get(_getCollection(self, pid), pid, fields, function (err, arg) {
         if (null == err) {
             unzipAny(self.sm.getByKey(pid.getSchemaKey()), arg, options, callback);
-        }
-        else {
+        } else {
             if (options.graceful && ('Not existing'==err || 'No such fields'==err)) {
                 return callback(null, null);
             }
@@ -305,16 +338,16 @@ function get(pid, fields, options, callback) {
 }
 
 function add(pid, name, value, callback) {
-    var self = this;
+    let self = this;
     if ('function' == typeof (value)) {
         callback = value;
         value = 1;
     }
-    var ret = _checkSchemaAndCallback(self.sm, pid, name, null, callback);
+    let ret = _checkSchemaAndCallback(self.sm, pid, name, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
 
     if (attr.__type__!='Integer' && attr.__type__!='Number') {
         return process.nextTick(callback, name + ' not integer', null);
@@ -325,8 +358,9 @@ function add(pid, name, value, callback) {
 
 // fields can be an attribute name or an array of attributes
 function remove(pid, fields, callback) {
-    var self = this;
     assert('function' == typeof callback);
+
+    let self = this;
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
@@ -356,7 +390,7 @@ function manyGet(pids, fields, options, callback) {
         }
     }
 
-    var newpids = []
+    let newpids = []
         , key
         , pid
         , self = this;
@@ -366,7 +400,7 @@ function manyGet(pids, fields, options, callback) {
             callback(null, []);
         });
     }
-    for (var i = 0; i < pids.length; i++) {
+    for (let i = 0; i < pids.length; i++) {
         pid = pids[i];
         if (null == (pid = _checkPid(self.sm, pid, callback)))
             return;
@@ -383,77 +417,10 @@ function manyGet(pids, fields, options, callback) {
 
     MongoOP.manyGet(_getCollection(self, pid), newpids, fields, function (err, arg) {
         if (!err && false != options.unzip) {
-            var n = 0;
-            var sch = self.sm.getByKey(key);
+            let n = 0;
+            let sch = self.sm.getByKey(key);
 
-            for (var x in arg) {
-                n ++;
-                Schema.unzipAny(sch, arg[x], function (err, ret) {
-                    if (--n == 0) {
-                        callback(null, arg);
-                    }
-                });
-            }
-            if (0 != n)
-                return;
-        }
-        callback(err, arg);
-    });
-}
-
-function getMany(pids, fields, options, callback) {
-    assert(pids instanceof Array);
-    if (undefined == callback) {
-        if (undefined == options) {
-            assert('function' == typeof fields);
-            callback = fields;
-            fields = null;
-            options = {};
-        }
-        else {
-            assert('function' == typeof options);
-            callback = options;
-            if (fields instanceof Array || 'string' == typeof fields) {
-                options = {};
-            }
-            else {
-                options = fields ? fields : {};
-                fields = null;
-            }
-        }
-    }
-
-    var newpids = []
-        , key
-        , pid
-        , self = this;
-
-    if (0 == pids.length) {
-        return process.nextTick(function () {
-            callback(null, []);
-        });
-    }
-    for (var i = 0; i < pids.length; i++) {
-        pid = pids[i];
-        if (null == (pid = _checkPid(self.sm, pid, callback)))
-            return;
-        if (0 == i) {
-            key = pid.getSchemaKey();
-        }
-        else if (key != pid.getSchemaKey()) {
-            return process.nextTick(function () {
-                callback("Not same schema of pid '" + pid + "'.", null);
-            });
-        }
-        newpids.push(pid);
-    }
-
-    MongoOP.getMany(_getCollection(self, pid), newpids, fields, function (err, arg) {
-        if (!err && false != options.unzip) {
-            var n = 0;
-            var sch = self.sm.getByKey(key);
-
-            for (var x in arg) {
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -475,12 +442,12 @@ function set(pid, json, options, callback) {
         options = {};
     }
 
-    var self = this;
+    let self = this;
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
 
-    var sch = self.sm.getByKey(pid.getSchemaKey());
+    let sch = self.sm.getByKey(pid.getSchemaKey());
     if (null == sch) {
         return process.nextTick(function () {
             callback("Invalid pid '" + pid + "' provided", null);
@@ -493,8 +460,8 @@ function set(pid, json, options, callback) {
         });
     }
 
-    var attr, elem;
-    for (var x in json) {
+    let attr, elem;
+    for (let x in json) {
         elem = json[x];
         attr = Parser.findAttribute(sch, x);
         if (null == attr)       // should be __zip__, otherwise it will not pass Parser.checkElement
@@ -518,22 +485,22 @@ function replace(pid, name, value, options, callback) {
         options = {};
     }
 
-    var self = this;
-    var ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
+    let self = this;
+    let ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     Schema.fillDefault(attr, value, true);
 
-    var sch = ret[2];
-    if (attr.__zip__ && 1!=sch.__ziplist__.length) {
+    let sch = ret[2];
+    if (attr.__zip__ && 1 != sch.__ziplist__.length) {
         return process.nextTick(function () {
             callback("Zipped member '" + sch.__name__ + "' can't be replaced.", null);
         });
     }
 
-    var json = {};
+    let json = {};
     json[name] = value;
     Schema.zipAny(sch, json, function (err, arg) {
         MongoOP.replace(_getCollection(self, pid), pid, name, json, options, callback);
@@ -547,22 +514,22 @@ function insert(pid, name, value, options, callback) {
         options = {};
     }
 
-    var self = this;
-    var ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
+    let self = this;
+    let ret = _checkSchemaAndCallback(self.sm, pid, name, value, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     Schema.fillDefault(attr, value, true);
 
-    var sch = ret[2];
+    let sch = ret[2];
     if (attr.__zip__ && 1!=sch.__ziplist__.length) {
         return process.nextTick(function () {
             callback("Zipped member '" + sch.__name__ + "' can't be inserted.", null);
         });
     }
 
-    var json = {};
+    let json = {};
     json[name] = value;
     Schema.zipAny(sch, json, function (err, arg) {
         MongoOP.insert(_getCollection(self, pid), pid, name, json, callback);
@@ -570,8 +537,8 @@ function insert(pid, name, value, options, callback) {
 }
 
 function _findLink(sch1, sch2, linkname, callback) {
-    var attr1, attr2;
-    var link1, link2;
+    let attr1, attr2;
+    let link1, link2;
 
     if ('~' == linkname) {
         link1 = '~' + sch2.__name__;
@@ -612,7 +579,7 @@ function _findLink(sch1, sch2, linkname, callback) {
 }
 
 function _checkLink(sm, pid1, pid2, linkname, callback) {
-    var sch1, sch2;
+    let sch1, sch2;
 
     pid1 = _checkPid(sm, pid1, callback);
     if (null == pid1)
@@ -644,7 +611,7 @@ function _checkLink(sm, pid1, pid2, linkname, callback) {
         return null;
     }
 
-    var ret = _findLink(sch1, sch2, linkname, callback);
+    let ret = _findLink(sch1, sch2, linkname, callback);
     if (null == ret)
         return null;
 
@@ -707,7 +674,7 @@ function _procAtt(attr, att, pid, now, callback) {
 
 // att1 and att2 is optional
 function link(pid1, pid2, linkname, att1, att2, callback) {
-    var self = this;
+    let self = this;
     if ('function' === typeof att1) {
         callback = att1;
         att1 = null;
@@ -718,18 +685,18 @@ function link(pid1, pid2, linkname, att1, att2, callback) {
         att2 = null;
     }
 
-    var ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
+    let ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
     if (null == ret)
         return;
 
-    var pid1 = ret[0];
-    var pid2 = ret[1];
-    var link1 = ret[2];
-    var link2 = ret[3];
-    var attr1 = ret[4];
-    var attr2 = ret[5];
+    pid1 = ret[0];
+    pid2 = ret[1];
+    let link1 = ret[2];
+    let link2 = ret[3];
+    let attr1 = ret[4];
+    let attr2 = ret[5];
 
-    var now = new Date(Date.now());
+    let now = new Date(Date.now());
     if (null == (att1 = _procAtt(attr1, att1, pid2, now, callback))
     || (null == (att2 = _procAtt(attr2, att2, pid1, now, callback))))
         return;
@@ -740,15 +707,15 @@ function link(pid1, pid2, linkname, att1, att2, callback) {
 }
 
 function unlink(pid1, pid2, linkname, callback) {
-    var self = this;
-    var ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
+    let self = this;
+    let ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
     if (null == ret)
         return;
 
-    var pid1 = ret[0];
-    var pid2 = ret[1];
-    var link1 = ret[2];
-    var link2 = ret[3];
+    pid1 = ret[0];
+    pid2 = ret[1];
+    let link1 = ret[2];
+    let link2 = ret[3];
 
     // TODO: coregion
     MongoOP.removeMap(_getCollection(self, pid1), pid1, link1, 'peer', pid2, function (err, arg) {
@@ -759,14 +726,14 @@ function unlink(pid1, pid2, linkname, callback) {
 }
 
 function isLinked(pid1, pid2, linkname, callback) {
-    var self = this;
-    var ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
+    let self = this;
+    let ret = _checkLink(self.sm, pid1, pid2, linkname, callback);
     if (null == ret)
         return;
 
-    var pid1 = ret[0];
-    var pid2 = ret[1];
-    var link1 = ret[2];
+    pid1 = ret[0];
+    pid2 = ret[1];
+    let link1 = ret[2];
 
     MongoOP.getElementsByCond(_getCollection(self, pid1), pid1, link1, {peer: pid2}, function (err, arg) {
         callback(err, null == err ? arg[0].time : arg);
@@ -774,19 +741,19 @@ function isLinked(pid1, pid2, linkname, callback) {
 }
 
 function getLinks(pid, linkname, callback) {
-    var self = this;
-    var ret = _checkSchemaAndCallback(self.sm, pid, linkname, null, callback);
+    let self = this;
+    let ret = _checkSchemaAndCallback(self.sm, pid, linkname, null, callback);
     if (null == ret)
         return;
 
-    var pid = ret[0];
+    pid = ret[0];
     MongoOP.get(_getCollection(self, pid), pid, linkname, callback);
 }
 
 // options: {upsert: ? (default: true), update: ? (default: false)}
 function push(pid, listname, elem, option, callback) {
-    var update, upsert;
-    var self = this;
+    let update, upsert;
+    let self = this;
     if (undefined == callback) {
         callback = option;
         upsert = true;
@@ -798,11 +765,11 @@ function push(pid, listname, elem, option, callback) {
     }
     assert(callback);
 
-    var ret = _checkSchemaAndCallback(self.sm, pid, listname, elem, callback);
+    let ret = _checkSchemaAndCallback(self.sm, pid, listname, elem, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     Schema.fillDefault(attr, elem, true);
 
     Schema.zipAny(attr, elem, function (err, arg) {
@@ -837,18 +804,18 @@ function push(pid, listname, elem, option, callback) {
 }
 
 function pop(pid, setname, first, callback) {
-    var self = this;
+    let self = this;
     if (undefined == callback) {
         assert('function' === typeof first);
         callback = first;
         first = false;
     }
 
-    var ret = _checkSchemaAndCallback(self.sm, pid, setname, null, callback);
+    let ret = _checkSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
 
     switch (attr.__type__) {
     case '__list__':
@@ -866,10 +833,10 @@ function pop(pid, setname, first, callback) {
 }
 
 function _checkSetSchemaAndCallback(sm, pid, setname, json, callback) {
-    var ret = _checkSchemaAndCallback(sm, pid, setname, json, callback);
+    let ret = _checkSchemaAndCallback(sm, pid, setname, json, callback);
     if (null == ret)
         return;
-    var attr = ret[1];
+    let attr = ret[1];
 
     switch (attr.__type__) {
         case '__list__':
@@ -890,23 +857,23 @@ function _checkSetSchemaAndCallback(sm, pid, setname, json, callback) {
 }
 
 function replaceElementByKey(pid, setname, elem, replaceAll, callback) {
-    var self = this;
+    let self = this;
     if (undefined == callback) {
         assert('function' === typeof replaceAll);
         callback = replaceAll;
         replaceAll = false;
     }
 
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     if (replaceAll) {
         Schema.fillDefault(attr, elem, true);
     }
 
-    var keyname = attr.__key__;
+    let keyname = attr.__key__;
     assert(keyname != '', "keyname != '' in replaceElementByKey");
     Schema.zipAny(attr, elem, function (err, arg) {
         MongoOP.replaceMap(_getCollection(self, pid), pid, setname, keyname, elem, replaceAll, callback);
@@ -914,12 +881,12 @@ function replaceElementByKey(pid, setname, elem, replaceAll, callback) {
 }
 
 function replaceElement(pid, setname, old, _new, callback) {
-    var self = this;
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, setname, _new, callback);
+    let self = this;
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, _new, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     Schema.fillDefault(attr, _new, true);
 
     assert(attr.__key__ == '', "keyname == '' in replaceElement");
@@ -927,18 +894,18 @@ function replaceElement(pid, setname, old, _new, callback) {
 }
 
 function replaceElementByIndex(pid, contname, index, _new, replaceAll, callback) {
-    var self = this;
+    let self = this;
     if (undefined == callback) {
         assert('function' === typeof replaceAll);
         callback = replaceAll;
         replaceAll = false;
     }
 
-    var ret = _checkSchemaAndCallback(self.sm, pid, contname, _new, callback);
+    let ret = _checkSchemaAndCallback(self.sm, pid, contname, _new, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
     if (replaceAll) {
         Schema.fillDefault(attr, _new, true);
     }
@@ -947,34 +914,34 @@ function replaceElementByIndex(pid, contname, index, _new, replaceAll, callback)
 }
 
 function removeElement(pid, setname, elem, callback) {
-    var self = this;
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
+    let self = this;
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
 
     assert(attr.__key__ == '', "keyname == '' in removeElement");
     MongoOP.removeSet(_getCollection(self, pid), pid, setname, elem, callback);
 }
 
 function removeElementsByCond(pid, cont_name, cond, callback) {
-    var self = this;
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
+    let self = this;
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
+    pid = ret[0];
 
     MongoOP.removeElementsByCond(_getCollection(self, pid), pid, cont_name, cond, callback);
 }
 
 function removeElementByKey(pid, setname, key, callback) {
-    var self = this;
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
+    let self = this;
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
 
     assert(attr.__key__ != '', "keyname != '' in removeElementByKey");
     if (attr[attr.__key__].__type__ == 'Integer')
@@ -984,18 +951,18 @@ function removeElementByKey(pid, setname, key, callback) {
 
 function getElementByKey(pid, setname, key, options, callback) {
     assert(key, 'key must be provided.');
-    var self = this;
+    let self = this;
     if (undefined == callback) {
         callback = options;
         options = {};
     }
 
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
-    var keyname = attr.__key__;
+    pid = ret[0];
+    let attr = ret[1];
+    let keyname = attr.__key__;
     assert(keyname != '');
     if (attr[attr.__key__].__type__ == 'Integer')
         key = +key;
@@ -1005,7 +972,7 @@ function getElementByKey(pid, setname, key, options, callback) {
             if (null == err) {
                 return unzipAny(self.sm.getByKey(pid.getSchemaKey()), arg, options, function (err, arg) {
                     arg = arg[setname];
-                    for (var x in arg) {
+                    for (let x in arg) {
                         if (arg[keyname] == key) {
                             return callback(null, arg[keyname]);
                         }
@@ -1020,7 +987,7 @@ function getElementByKey(pid, setname, key, options, callback) {
         });
     }
 
-    var cond = {};
+    let cond = {};
     cond[keyname] = key;
     MongoOP.getElementsByCond(_getCollection(self, pid), pid, setname, cond, function (err, arg) {
         if (null == err) {
@@ -1034,44 +1001,44 @@ function getElementByKey(pid, setname, key, options, callback) {
 }
 
 function getElementByIndex(pid, listname, index, callback) {
-    var self = this;
-    var ret = _checkSchemaAndCallback(self.sm, pid, listname, null, callback);
+    let self = this;
+    let ret = _checkSchemaAndCallback(self.sm, pid, listname, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
-    var attr = ret[1];
+    pid = ret[0];
+    let attr = ret[1];
 
     // TODO::
 }
 
 function getElementsByRange(pid, cont_name, range, callback) {
-    var self = this;
-    var ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
+    let self = this;
+    let ret = _checkSetSchemaAndCallback(self.sm, pid, cont_name, null, callback);
     if (null == ret)
         return;
-    var pid = ret[0];
+    pid = ret[0];
 
     MongoOP.getElementsByRange(_getCollection(self, pid), pid, cont_name, range, callback);
 }
 
 function _procCreate(pm, arg) {
-    var name = arg.shift();
+    let name = arg.shift();
     if (undefined == name) {
         console.log("Schema name must be provided for 'create'");
         return null;
     }
-    var sch = pm.sm.getByName(name);
+    let sch = pm.sm.getByName(name);
     if (null == sch) {
         console.log("Invalid schema name %s", name);
         return null;
     }
 
-    var file = arg.shift()
+    let file = arg.shift()
         , save = '';
 
     if (undefined != file) {
         try {
-            var data = fs.readFileSync(file);
+            let data = fs.readFileSync(file);
             save = data.toString();
         }
         catch (e) {
@@ -1081,7 +1048,7 @@ function _procCreate(pm, arg) {
     }
 
     function _run() {
-        var json;
+        let json;
         try {
             json = new Function('return ' + save + ';')();
             if (null == json || undefined == json)
@@ -1120,30 +1087,30 @@ function _procCreate(pm, arg) {
 }
 
 function _procSet(pm, arg) {
-    var pidstr = arg.shift();
+    let pidstr = arg.shift();
     if (undefined == pidstr) {
         console.log("Peter id must be provided for 'set'");
         return null;
     }
     try {
-        var pid = new ObjectID(pidstr);
+        let pid = new ObjectID(pidstr);
     }
     catch (e) {
         console.log(e);
         return null;
     }
-    var sch = pm.sm.getByKey(pid.getSchemaKey());
+    let sch = pm.sm.getByKey(pid.getSchemaKey());
     if (null == sch) {
         console.log("Invalid pid %s", pidstr);
         return null;
     }
 
-    var file = arg.shift()
+    let file = arg.shift()
         , save = '';
 
     if (undefined != file) {
         try {
-            var data = fs.readFileSync(file);
+            let data = fs.readFileSync(file);
             save = data.toString();
         }
         catch (e) {
@@ -1153,7 +1120,7 @@ function _procSet(pm, arg) {
     }
 
     function _run() {
-        var json;
+        let json;
         try {
             json = new Function('return ' + save + ';')();
             if (null == json || undefined == json)
@@ -1197,7 +1164,7 @@ function _procLinkUnlink(pm, cmd, arg) {
         return null;
     }
 
-    var func = eval(cmd).bind(pm);
+    let func = eval(cmd).bind(pm);
     func(arg[0], arg[1], arg[2], function (err, arg) {
         if (null == err) {
             console.log("Succeeded! " + arg);
@@ -1209,13 +1176,13 @@ function _procLinkUnlink(pm, cmd, arg) {
     return null;
 }
 
-var pp = Engine.generate(__dirname + '/peter.pp');
+let pp = Engine.generate(__dirname + '/peter.pp');
 assert(null != pp, "Failed to generate from peter.pp");
 eval(pp);
 
 function command4Monitor(arg, rl) {
-    var cmd;
-    var self = this;
+    let cmd;
+    let self = this;
 
     function _help() {
         console.log("Commands for peter:");
@@ -1258,7 +1225,7 @@ function command4Monitor(arg, rl) {
             return _procLinkUnlink(self, cmd, arg);
 
         default:
-            var pid = null;
+            let pid = null;
 
             try {
                 pid = ObjectID(cmd);
@@ -1283,18 +1250,18 @@ function command4Monitor(arg, rl) {
     return null;
 }
 
-function query(collName, cond, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
-    if ('function' == typeof options) {
+function find(collName, cond, options, callback) {
+    let self = this;
+    let collection = self.db.collection(collName);
+    if ('function' === typeof options) {
         callback = options;
         options = {};
     }
-    MongoOP.query(collection, cond, options, function (err, arg) {
-        if (!err && false!=options.unzip) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+    MongoOP.find(collection, cond, options, function (err, arg) {
+        if (!err && false != options.unzip) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1310,17 +1277,17 @@ function query(collName, cond, options, callback) {
 }
 
 function findOne(collName, cond, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if ('function' == typeof options) {
         callback = options;
         options = {};
     }
     MongoOP.findOne(collection, cond, options, function (err, arg) {
         if (!err && false!=options.unzip) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1344,26 +1311,40 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
     assert('object' == typeof update, 'Invalid parameter: update');
     assert('function' == typeof callback, 'callback is not a function');
     
-    var self = this;
-    var $set = update['$set'];
-    if($set && options.upsert) {
-        var sch = self.sm.validate(collName, $set);
+    let self = this;
+    let operators = {};
+    let $set = {};
+    for(let prop in update) {
+        if(update.hasOwnProperty(prop) && !prop.startsWith('$')) {
+            $set[prop] = update[prop];
+        } else {
+            operators[prop] = update[prop];
+        }
+    }
+    
+    if(Object.keys($set).length > 0) {
+        let sch = self.sm.validate(collName, $set);
         if (null == sch) {
             return process.nextTick(function () {
                 callback('Schema check error: ' + collName, null);
             });
         }
-        Schema.fillDefault(sch, $set);
-        var id = genPeterId(sch.__key__);
-        //$set['_id'] = id;
-        $set['_schemaid'] = sch.__id__;
-        update['$set'] = $set;
+        if(options.upsert) {
+            Schema.fillDefault(sch, $set);
+            operators['$setOnInsert'] = { 
+                _id: genPeterId(sch.__key__),
+                _schemaid: sch.__id__
+            };
+            options['returnOriginal'] = false;
+        }
+        operators['$set'] = $set;
     }
-    MongoOP.findOneAndUpdate(self.db.collection(collName), filter, update, options, function (err, arg) {
-        if (!err) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+    
+    MongoOP.findOneAndUpdate(self.db.collection(collName), filter, operators, options, function (err, arg) {
+      if (!err) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1379,17 +1360,17 @@ function findOneAndUpdate(collName, filter, update, options, callback) {
 }
 
 function findOneAndDelete(collName, filter, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if('function' == typeof(options)) {
       callback = options;
       options = {};
     }
     MongoOP.findOneAndDelete(collection, filter, options, function (err, arg) {
         if (!err) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1405,17 +1386,26 @@ function findOneAndDelete(collName, filter, options, callback) {
 }
 
 function findOneAndReplace(collName, filter, replacement, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if('function' == typeof(options)) {
       callback = options;
       options = {};
     }
+    let sch = self.sm.validate(collName, replacement);
+    if (null == sch) {
+        return process.nextTick(function () {
+            callback('Schema check error: ' + collName, null);
+        });
+    }
+    Schema.fillDefault(sch, replacement);
+    replacement._schemaid = sch.__id__;
+    options.returnOriginal = false;
     MongoOP.findOneAndReplace(collection, filter, replacement, options, function (err, arg) {
         if (!err) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1431,8 +1421,8 @@ function findOneAndReplace(collName, filter, replacement, options, callback) {
 }
 
 function aggregate(collName, cond, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if ('function' == typeof options) {
         callback = options;
         options = {};
@@ -1440,9 +1430,9 @@ function aggregate(collName, cond, options, callback) {
     assert('function' == typeof callback, 'callback is not a function');
     MongoOP.aggregate(collection, cond, options, function(err, arg) {
         if (!err && false != options.unzip) {
-            var n = 0;
-            var sch = self.sm.getByName(collName);
-            for (var x in arg) {
+            let n = 0;
+            let sch = self.sm.getByName(collName);
+            for (let x in arg) {
                 n ++;
                 Schema.unzipAny(sch, arg[x], function (err, ret) {
                     if (--n == 0) {
@@ -1458,15 +1448,15 @@ function aggregate(collName, cond, options, callback) {
 }
 
 function count(collName, cond, callback) {
-    var collection = this.db.collection(collName);
+    let collection = this.db.collection(collName);
     MongoOP.count(collection, cond, function (err, arg) {
         callback(err, arg);
     });
 }
 
 function distinct(collName, field, cond, options, callback) {
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if('function' == typeof(cond)) {
         callback = cond;
         cond = {};
@@ -1487,8 +1477,8 @@ function findUnion(collName, field, cond, options, callback) {
     assert('string' == typeof collName, 'collName is not string');
     assert('string' == typeof field, 'field is not string');
 
-    var self = this;
-    var collection = self.db.collection(collName);
+    let self = this;
+    let collection = self.db.collection(collName);
     if('function' == typeof(cond)) {
         callback = cond;
         cond = {};
@@ -1498,16 +1488,16 @@ function findUnion(collName, field, cond, options, callback) {
         callback = options;
         options = { limit: 25 };
     }
-    var limit = options.limit || 25;
-    var result = [];
+    let limit = options.limit || 25;
+    let result = [];
     MongoOP.findCursor(collection, cond, options, function (err, cursor) {
         cursor.forEach(function(doc) {
             if(result.length >= limit) {
                 cursor.close();
                 return;
             }
-            var unionid = doc[field];
-            var index = _.findIndex(result, [field, unionid]);
+            let unionid = doc[field];
+            let index = _.findIndex(result, [field, unionid]);
             if(index == -1) {
                 result.push(doc);
             }
@@ -1538,15 +1528,12 @@ Manager.prototype = {
     manyGet: manyGet,   // args: pids (array), fields (optional), callback
                         // fields: can be an attribute name, or an array of attributes, or undefined/null
                         // ret: what specified in fields
-    // difference between manyGet & getMany: manyGet return {}, getMany return []
-    getMany: getMany,   // args: pids (array), fields (optional), callback
-                        // fields: can be an attribute name, or an array of attributes, or undefined/null
-                        // ret: an array of objects (same order with pids)
-    query: query,       // args: collName, query, options, callback
+    find: find,         // args: collName, query, options, callback
                         // query and options can be an {} but not null
                         // default options is sort. you can also use fields, skip, limit, sort in options.
                         // ret: what specified in fields
     findOne: findOne,
+    findUnion: findUnion,   // args: collName, field, cond, options, callback
     findOneAndUpdate: findOneAndUpdate,
     findOneAndReplace: findOneAndReplace,
     findOneAndDelete: findOneAndDelete,
@@ -1572,7 +1559,7 @@ Manager.prototype = {
 
     getElementByKey: getElementByKey,         // args: pid, setname, key, options (optional), callback
     getElementByIndex: getElementByIndex,     // TODO:
-    getElementsByRange: getElementsByRange,     // args: pid, cont_name, range:[from, number], callback
+    getElementsByRange: getElementsByRange,   // args: pid, cont_name, range:[from, number], callback
 
     link: link,         // args: pid1, pid2, linkname, att1 (optional), att2 (optional), callback
     isLinked: isLinked, // args: pid1, pid2, linkname, callback
@@ -1582,17 +1569,15 @@ Manager.prototype = {
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
     distinct: distinct,     // args: collName, field, cond, options, callback
-    findUnion: findUnion,   // args: collName, field, cond, options, callback
 
     isExpectedPeter: isExpectedPeter,         // args: pid name; return boolean
-
     command: command4Monitor
 };
 
 module.exports = {
     createManager: function () {
-        var mgr = new Manager();
-        return mgr;
+        let mgr = new Manager();
+        return Promise.promisifyAll(mgr);
     },
 
     version: VERSION

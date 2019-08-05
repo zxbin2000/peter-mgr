@@ -1,0 +1,72 @@
+SimpleUser: {                     // 简单用户信息
+  userid: @User,                  // 用户 ID
+  nick: String,                   // 用户昵称
+  avatar: String                  // 用户头像
+}
+
+// 用户
+@User: {
+  *avatar: String,                // 用户头像
+  *gender: Integer,               // 用户性别 0：未知、1：男、2：女
+  real_name: String,              // 用户姓名
+  profile: String,                // 用户简介
+  province: String,               // 所在省份
+  city: String,                   // 所在城市
+  +details: String,               // 状态信息：压缩存储
+  is_deleted: False,              // 删除标识
+  create_time: Now,               // 入库时间
+  update_time: Time               // 更新时间
+}
+
+// 登录状态
+@UserSession: {
+  user_id: @User,                // 用户ID
+  openid: String,                // 微信用户唯一标识
+  unionid: String,               // 微信用户在开放平台的唯一标识符
+  nick_name: String,             // 微信昵称
+  session_key: String,           // 微信用户会话密钥
+  status: String,                // 账户状态
+  create_time: Now,              // 入库时间
+  update_time: Time              // 更新时间
+}
+
+// 粉丝关系
+@Follow: {
+  *user_id: @User,                // 用户标识
+  nick_name: String,              // 用户昵称
+  [subscribe!userid]: SimpleUser, // 关注列表
+  [follower!userid]: SimpleUser,  // 粉丝列表
+  create_time: Now,               // 入库时间
+  update_time: Time               // 更新时间
+}
+
+// 时政新闻
+@News: {
+  *cover: String,                 // 新闻封面
+  *title: String,                 // 新闻标题
+  slim_title: String,             // 副标题
+  source: String,                 // 新闻来源
+  external: String,               // 外部链接
+  html: String,                   // 新闻内容
+  [videos]: String,               // 视频信息
+  *posted_by: SimpleUser,         // 发表人
+  *n_like: Integer,               // 点赞数
+  *n_comment: Integer,            // 评论数
+  publish_time: Time,             // 发布时间
+  is_deleted: False,              // 删除标识
+  create_time: Now,               // 入库时间
+  update_time: Time               // 更新时间
+}
+
+// 时政新闻的点赞评论
+@NewsComment: {
+  *news: @News,                   // 新闻信息
+  is_like: False,                 // 点赞标识
+  content: String,                // 评论内容
+  *posted_by: SimpleUser,         // 发表人
+  reply_to: @NewsComment,         // 对评论的回复
+  [liked_by]: @User,              // 对评论的点赞
+  is_deleted: False,              // 删除标识
+  create_time: NOW,               // 发表时间
+  update_time: Time               // 更新时间
+}

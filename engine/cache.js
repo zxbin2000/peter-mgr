@@ -1,8 +1,8 @@
-var assert = require('assert');
-var sprintf = require("sprintf-js").sprintf;
-var utils = require('../utils/utils');
-var Lock = require('./lock');
-var Engine = require('./engine');
+let assert = require('assert');
+let sprintf = require("sprintf-js").sprintf;
+let utils = require('../utils/utils');
+let Lock = require('./lock');
+let Engine = require('./engine');
 
 function Cache(name, ttl, loader, verbose) {
     this.name = name;
@@ -12,7 +12,7 @@ function Cache(name, ttl, loader, verbose) {
     this.verbose = verbose;
 }
 
-var pp = Engine.generate(__dirname + '/cache.pp');
+let pp = Engine.generate(__dirname + '/cache.pp');
 assert(null != pp, "Failed to generate from cache.pp");
 eval(pp);
 
@@ -27,7 +27,7 @@ Cache.prototype.read_change = function (key, options, callback) {
 };
 
 Cache.prototype.expireNow = function (key, callback) {
-    var cache = this.all[key];
+    let cache = this.all[key];
     if (!cache) {
         return process.nextTick(callback, 'Invalid arguments', null);
     }
@@ -35,8 +35,8 @@ Cache.prototype.expireNow = function (key, callback) {
 };
 
 Cache.prototype.getAll = function () {
-    var out = {};
-    for (var x in this.all) {
+    let out = {};
+    for (let x in this.all) {
         out[x] = this.all[x][1];
     }
     return out;
@@ -44,7 +44,7 @@ Cache.prototype.getAll = function () {
 
 module.exports = {
     create: function (name, ttl, loader, verbose) {
-        var lof = new Cache(name, ttl, loader, verbose);
+        let lof = new Cache(name, ttl, loader, verbose);
         return lof;
     }
 };

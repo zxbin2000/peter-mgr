@@ -7,12 +7,12 @@ levelmap.prototype = {
         if (keyl1=='' || keyl2=='') {
             return;
         }
-        var l1 = this.map[keyl1];
+        let l1 = this.map[keyl1];
         if (!l1) {
             l1 = {'__': true};
             this.map[keyl1] = l1;
         }
-        var l2 = l1[keyl2];
+        let l2 = l1[keyl2];
         if (!l2) {
             l2 = [];
             l1[keyl2] = l2;
@@ -24,7 +24,7 @@ levelmap.prototype = {
         if (key == '') {
             return;
         }
-        var l1 = this.map[key];
+        let l1 = this.map[key];
         if (!l1) {
             l1 = [];
             this.map[key] = l1;
@@ -37,8 +37,8 @@ levelmap.prototype = {
             if (!map.hasOwnProperty('__')) {
                 return map;
             }
-            var out = [];
-            for (var x in map) {
+            let out = [];
+            for (let x in map) {
                 if (x != '__') {
                     out.push([x, _to(map[x])]);
                 }

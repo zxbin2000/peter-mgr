@@ -1,18 +1,18 @@
 /**
  * Created by linshiding on 3/10/15.
  */
-
-var Parser = require('./parser');
-var MongoOP = require('./mongoop');
-var Engine = require('../engine/engine');
-var assert = require('assert');
-var Thenjs = require('thenjs');
-var utils = require('../utils/utils');
-var ascii = require('../utils/ascii');
-var os = require('os');
-var fs = require('fs');
-var zlib = require('zlib');
-var sprintf = require('sprintf-js').sprintf;
+let Promise = require('bluebird');
+let Parser = require('./parser');
+let MongoOP = require('./mongoop');
+let Engine = require('../engine/engine');
+let assert = require('assert');
+let Thenjs = require('thenjs');
+let utils = require('../utils/utils');
+let ascii = require('../utils/ascii');
+let os = require('os');
+let fs = require('fs');
+let zlib = require('zlib');
+let sprintf = require('sprintf-js').sprintf;
 
 function Manager() {
     this.SchemaByName = {};
@@ -37,7 +37,7 @@ function addSchema(sm, sch, check) {
 }
 
 function genSchemaKey(sm, sch, callback) {
-    var key;
+    let key;
 
     if (sm.SchemaByName.hasOwnProperty(sch.__name__)) {
         key = sm.SchemaByName[sch.__name__].__key__;
@@ -50,10 +50,9 @@ function genSchemaKey(sm, sch, callback) {
     Thenjs(function (cont) {
         // generate a unique key
         MongoOP.add(sm.collection, 0, 'lastkey', 1, cont);
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         key = arg.lastkey;
-        var elem = {
+        let elem = {
             name: sch.__name__,
             key: key,
             time: sch.__time__,
@@ -62,25 +61,53 @@ function genSchemaKey(sm, sch, callback) {
         };
         // try to set key of this schema
         MongoOP.pushMap(sm.collection, 0, 'schema', 'name', elem, true, cont);
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         callback(null, key);
     }, function (cont, err) {
         if (err == 'Already existed') {
             MongoOP.getElementsByCond(sm.collection, 0, 'schema', {name: sch.__name__}, cont);
-        }
-        else {
+        } else {
             callback(err, 0);
         }
-    })
-    .then(function (cont, arg) {
+    }).then(function (cont, arg) {
         key = arg[0].key;
         // TODO: update local schema from the DB, then we can check the compatibility
         callback(null, key);
     });
 }
 
-var qUpdating = [];
+function _checkChange(sm, sch, callback) {
+    Thenjs(function(cont) {
+        MongoOP.getElementsByCond(sm.collection, 0, 'schema', { name: sch.__name__ }, cont);
+    }).then(function(cont, arg) {
+        let sm_id;
+        for(let i = 0; i < arg.length; i++) {
+          if(arg[i] && arg[i]['name'] === sch.__name__) {
+            sm_id = arg[i]['id'];
+            break;
+          }
+        }
+        if(typeof sm_id !== 'number' || sm_id <= 0) {
+            return process.nextTick(function () {
+                callback(null, true);
+            });
+        } else {
+          MongoOP.get(sm.collection, sm_id, {}, cont);
+        }
+    }).then(function(cont, arg) {
+        let _str_db = arg.str && arg.str.replace(/\s+/g, '');
+        let _str_ = sch.__str__ && sch.__str__.replace(/\s+/g, '');
+        return process.nextTick(function () {
+          callback(null, _str_db === _str_ ? false : true);
+        });
+    }).fail(function(cont, err) {
+        return process.nextTick(function () {
+            callback(null, 'No change');
+        });
+    });
+}
+
+let qUpdating = [];
 function updateSchema(sm, sch, callback) {
     assert(!sch.hasOwnProperty('_id') && !sch.hasOwnProperty('__key__'));
 
@@ -90,23 +117,29 @@ function updateSchema(sm, sch, callback) {
     }
 
     function _runUpdateQ() {
-        var x = qUpdating.shift();
+        let x = qUpdating.shift();
         if (x == undefined)
             return;
         sch = x[0];
         callback = x[1];
 
         Thenjs(function (cont) {
-            genSchemaKey(sm, sch, cont);
-        })
-        .then(function (cont, arg) {
+            _checkChange(sm, sch, cont);
+        }).then(function(cont, changed) {
+            if(typeof changed === 'boolean' && !changed) {
+                return process.nextTick(function () {
+                    callback(null, sch.__name__ + ' no change.');
+                });
+            } else {
+              genSchemaKey(sm, sch, cont);
+            }
+        }).then(function (cont, arg) {
             sch.__key__ = arg;
             MongoOP.add(sm.collection, 0, 'lastid', 1, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             sch._id = arg.lastid;
             //console.log("name: %s, key: %d, id: %d", sch.__name__, sch.__key__, sch._id);
-            sm.collection.insert({
+            sm.collection.insertOne({
                 _id: sch._id,
                 name: sch.__name__,
                 key: sch.__key__,
@@ -114,19 +147,16 @@ function updateSchema(sm, sch, callback) {
                 who: sch.__who__,
                 str: sch.__str__
             }, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             MongoOP.replaceMap(sm.collection, 0, 'schema', 'name',
-                {name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__},
+                { name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__ },
                 false, cont);
-        })
-        .then(function (cont, arg) {
+        }).then(function (cont, arg) {
             addSchema(sm, sch, false);
             callback(null, sch);
 
             _runUpdateQ();
-        })
-        .fail(function (cont, err, result) {
+        }).fail(function (cont, err, result) {
             console.log("%s", err.stack);
             callback(err, null);
 
@@ -138,13 +168,13 @@ function updateSchema(sm, sch, callback) {
 }
 
 function update(data, who, callback) {
-    var self = this;
+    let self = this;
     if ('function' == typeof who) {
         callback = who;
         who = os.hostname();
     }
 
-    var schema = Parser.parse(data, self.SchemaByName);
+    let schema = Parser.parse(data, self.SchemaByName);
     if (null == schema) {
         return process.nextTick(function () {
             callback('Invalid schema', null);
@@ -152,13 +182,11 @@ function update(data, who, callback) {
     }
     //console.log(Parser.print(schema));
 
-    var q = []
-        , ret = 0
-        , haserr = false
+    let q = []
         , map = {};
 
-    for (var x in schema) {
-        var sch = schema[x];
+    for (let x in schema) {
+        let sch = schema[x];
         if (sch.__type__ == '__peter__') {
             sch.__who__ = who;
             // TODO: check compatibility
@@ -171,25 +199,23 @@ function update(data, who, callback) {
         });
     }
 
-    Thenjs.eachSeries(q, function (cont, each) {
-        updateSchema(self, each, function (err, arg) {
-            if (null != err)
-                haserr = true;
-            map[each.__name__] = arg;
-            if (++ret == q.length) {
-                callback(haserr ? 'Not all updated' : null, map);
-            }
-            else {
-                cont();
-            }
+    Thenjs().eachSeries(q, function(cont, item) {
+      updateSchema(self, item, cont);
+    }).then(function(cont, args) {
+        return process.nextTick(function () {
+            callback(null, args);
+        });
+    }).fail(function(cont, error) {
+        console.log('Error: ', error);
+        return process.nextTick(function () {
+            callback('Update error', null);
         });
     });
 }
 
-var __pp = Engine.generate(__dirname + '/schema.pp');
+let __pp = Engine.generate(__dirname + '/schema.pp');
 assert(null != __pp, "Failed to generate from schema.pp");
 eval(__pp);
-
 
 function _procUpdate(sm, arg) {
     function _run(data, callback) {
@@ -197,7 +223,7 @@ function _procUpdate(sm, arg) {
         sm.update(data, function (err, arg) {
             if (null == err) {
                 console.log("Update succeeded!");
-                for (var x in arg) {
+                for (let x in arg) {
                     console.log("Name: %s, Key: %d, Id: %d, Time: %s",
                         x, arg[x].__key__, arg[x]._id, timeString(arg[x].__time__));
                 }
@@ -212,7 +238,7 @@ function _procUpdate(sm, arg) {
     }
 
     if (arg.length >= 1) {
-        var data = null;
+        let data = null;
         try {
             data = fs.readFileSync(arg[0]);
         }
@@ -229,7 +255,7 @@ function _procUpdate(sm, arg) {
         return null;
     }
 
-    var save = '';
+    let save = '';
     return function (str) {
         if (save != '')
             save += '\n';
@@ -245,8 +271,8 @@ function _procUpdate(sm, arg) {
 function _procHistory(sm, name, key) {
     sm.collection.find({name: name, key: key}, {}).sort({_id: -1}).toArray(function (err, arg) {
         if (null == err) {
-            for (var x in arg) {
-                var inst = arg[x];
+            for (let x in arg) {
+                let inst = arg[x];
                 console.log("// @@Create time: %s, by %s", timeString(inst.time), inst.who);
                 console.log("// @@Version id: %d", inst._id);
                 console.log(inst.str);
@@ -259,14 +285,14 @@ function _procHistory(sm, name, key) {
 }
 
 function _procSetAutoId(sch_name, from, callback) {
-    var set = {};
+    let set = {};
     set[sch_name] = 'number' == typeof from ? from : parseInt(from);
     MongoOP.set(this.collection, 0, set, {}, callback);
 }
 
 function commandForMonitor(arg, rl) {
-    var sch, cmd;
-    var self = this;
+    let sch, cmd;
+    let self = this;
 
     function _help() {
         console.log("Commands for schema:");
@@ -307,7 +333,7 @@ function commandForMonitor(arg, rl) {
         case 'list':
             console.log(sprintf("%24s%8s%8s%21s%30s", "NAME", "KEY", "ID", "TIME        ", "BY      "));
             console.log("=============================================================================================");
-            for (var x in self.SchemaByKey) {
+            for (let x in self.SchemaByKey) {
                 sch = self.SchemaByKey[x];
                 if (sch.hasOwnProperty('__key__')) {
                     console.log(sprintf("%24s%8d%8d%21s%30s", sch.__name__, sch.__key__,
@@ -352,9 +378,9 @@ function commandForMonitor(arg, rl) {
 
         case 'setautoid':
             if (arg.length >= 2) {
-                var sch = arg[0];
-                var from = arg[1];
-                var callback = ('function' == typeof arg[2])
+                let sch = arg[0];
+                let from = arg[1];
+                let callback = ('function' == typeof arg[2])
                     ? arg[2]
                     : function (err, arg) {};
                 return self.setAutoId(sch, from, callback);
@@ -382,7 +408,7 @@ function commandForMonitor(arg, rl) {
                 _printSchemaStr(sch);
             }
             else if (cmd == 'all') {
-                for (var x in self.SchemaByKey) {
+                for (let x in self.SchemaByKey) {
                     _printSchemaStr(self.SchemaByKey[x]);
                 }
             }
@@ -398,14 +424,14 @@ function _findToZip(sch, json) {
     if (undefined == sch.__ziplist__ || !json) {
         return null;
     }
-    var zip = {};
-    var out = [];
-    var ret, name, flag = false;
-    for (var x in sch.__ziplist__) {
+    let zip = {};
+    let out = [];
+    let ret, name, flag = false;
+    for (let x in sch.__ziplist__) {
         name = sch.__ziplist__[x];
         if (json.hasOwnProperty(name)) {
-            var subsch = sch[name];
-            var subjson = json[name];
+            let subsch = sch[name];
+            let subjson = json[name];
             if (subsch.__zip__) {
                 zip[name] = subjson;
                 flag = true;
@@ -414,7 +440,7 @@ function _findToZip(sch, json) {
             else {
                 if (name.substr(0, 1) == '[') {
                     assert(subjson instanceof Array);
-                    for (var x in subjson) {
+                    for (let x in subjson) {
                         ret = _findToZip(subsch, subjson[x]);
                         if (null != ret) {
                             out = out.concat(ret);
@@ -444,15 +470,15 @@ function fake(str, callback) {
 }
 
 function zipAny(sch, json, callback) {
-    var out = _findToZip(sch, json);
+    let out = _findToZip(sch, json);
     if (null == out) {
         return process.nextTick(function () {
             callback(null, json);
         });
     }
     //console.log(out);
-    var n = out.length;
-    for (var x in out) {
+    let n = out.length;
+    for (let x in out) {
         function _zip(which) {
             zlib.deflate(JSON.stringify(which[1]), function (err, arg) {
                 if (null == err) {
@@ -472,17 +498,17 @@ function _findZip(sch, json) {
     if (undefined == sch.__ziplist__ || !json) {
         return null;
     }
-    var out = [];
-    var ret, name;
-    for (var x in sch.__ziplist__) {
+    let out = [];
+    let ret, name;
+    for (let x in sch.__ziplist__) {
         name = sch.__ziplist__[x];
         if (json.hasOwnProperty(name)) {
-            var subsch = sch[name];
-            var subjson = json[name];
+            let subsch = sch[name];
+            let subjson = json[name];
 
             if (name.substr(0, 1) == '[') {
                 assert(subjson instanceof Array);
-                for (var x in subjson) {
+                for (let x in subjson) {
                     ret = _findZip(subsch, subjson[x]);
                     if (null != ret) {
                         out = out.concat(ret);
@@ -505,7 +531,7 @@ function _findZip(sch, json) {
 
 function unzipAny(sch, json, callback) {
     assert(null != sch);
-    var found = _findZip(sch, json);
+    let found = _findZip(sch, json);
     //console.log(found);
     if (null == found) {
         return process.nextTick(function () {
@@ -513,13 +539,13 @@ function unzipAny(sch, json, callback) {
         });
     }
 
-    var n = found.length;
-    for (var x in found) {
+    let n = found.length;
+    for (let x in found) {
         function _unzip(which) {
             zlib.unzip(which.__zip__.buffer, function (err, arg) {
                 assert(null == err);
-                var unzip = JSON.parse(arg);
-                for (var x in unzip) {
+                let unzip = JSON.parse(arg);
+                for (let x in unzip) {
                     which[x] = unzip[x];
                 }
                 delete which.__zip__;
@@ -534,13 +560,13 @@ function unzipAny(sch, json, callback) {
 }
 
 function fill(sch, json) {
-    var list, which;
+    let list, which;
     if (sch.__type__ == 'Object') {
         return json;
     }
     if (sch.hasOwnProperty('__defaultlist__')) {
         list = sch.__defaultlist__;
-        for (var x in list) {
+        for (let x in list) {
             which = list[x];
             if (!json.hasOwnProperty(which)) {
                 if ('$NOW' == sch[which].__default__ && 'Time' == sch[which].__type__) {
@@ -552,7 +578,7 @@ function fill(sch, json) {
             }
         }
     }
-    for (var x in json) {
+    for (let x in json) {
         if (!sch[x])
             continue;
         switch (sch[x].__type__) {
@@ -561,7 +587,7 @@ function fill(sch, json) {
         case '__keyed__':
         case '__link__':
             assert(json[x] instanceof Array);
-            for (var y in json[x]) {
+            for (let y in json[x]) {
                 fill(sch[x], json[x][y]);
             }
             break;
@@ -594,15 +620,15 @@ Manager.prototype = {
     },
 
     getAllSchemaName: function () {
-        var names = [];
-        for (var x in this.SchemaByName) {
+        let names = [];
+        for (let x in this.SchemaByName) {
             names.push(x);
         }
         return names;
     },
 
     validate: function (name, json) {
-        var sch = this.SchemaByName[name];
+        let sch = this.SchemaByName[name];
         if (null != sch && Parser.check(sch, json)) {
             return sch;
         }
@@ -615,7 +641,7 @@ Manager.prototype = {
 
 module.exports = {
     createManager: function () {
-        var mgr = new Manager();
+        let mgr = new Manager();
         return mgr;
     },
 
@@ -628,7 +654,7 @@ module.exports = {
         case '__link__':
             if (!one) {
                 assert(json instanceof Array);
-                for (var x in json) {
+                for (let x in json) {
                     fill(sch, json[x]);
                 }
                 break;

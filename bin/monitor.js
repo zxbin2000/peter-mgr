@@ -1,24 +1,23 @@
 #!/usr/bin/env node
 
-var peter, index, schema, utils;
+let peter, index, schema, utils;
 try {
     peter = require('../manager/peter').createManager();
     index = require('../index/index');
     utils = require('../utils/utils');
 } catch (e) {
-    var _peter = require('peter');
+    let _peter = require('peter');
     peter = _peter.createManager();
     index = _peter.Index;
     utils = _peter.Utils;
 }
 schema = peter.sm;
 
-var Thenjs = require('thenjs');
-var readline = require('readline');
-var mongoaddr = utils.mongoAddrFromConf();
+let readline = require('readline');
+let mongoaddr = utils.mongoAddrFromConf();
 
 function run(arg) {
-    var rl = readline.createInterface({
+    let rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
@@ -35,14 +34,13 @@ function run(arg) {
     console.log("Please input command... ('help' for help, 'exit' to quit)");
     rl.prompt();
 
-    var hijack = null;
+    let hijack = null;
 
     function onLine(cmd, arg) {
         if (null != hijack) {
             if (line != '$') {
                 hijack(line);
-            }
-            else {
+            } else {
                 hijack(null);
                 hijack = null;
                 rl.prompt();
@@ -83,13 +81,13 @@ function run(arg) {
     }
 
     if (undefined != arg) {
-        var cmd = arg.shift();
+        let cmd = arg.shift();
         onLine(cmd, arg);
         return;
     }
     rl.on('line', function (line) {
-        var arg = line.trim().split(' ');
-        var cmd = arg.shift();
+        let arg = line.trim().split(' ');
+        let cmd = arg.shift();
         onLine(cmd, arg);
     }).on('close', function () {
         console.log('Have a nice day!');
@@ -97,26 +95,23 @@ function run(arg) {
     });
 }
 
-Thenjs(function (cont) {
-    console.log("Fetching schemas...");
-    peter.bindDb(mongoaddr, {useNewUrlParser: true}, cont);
-}).then(function(cont, arg) {
-    console.log("Okay, %d schema\nLoading index...", arg);
-    index.init(peter, cont);
-}).then(function (cont, arg) {
-    console.log("Okay");
-    if (process.argv.length > 2) {
-        var args = Array.from(process.argv);
-        args.shift();
-        args.shift();
-        args.push(function (err, arg) {
-            process.exit(0);
-        });
-        return run(args);
+peter.bindDb(mongoaddr, { useNewUrlParser: true }, (error, args) => {
+    if(error) {
+        console.log('Error: ', error);
+        process.exit(-1);
     }
-    run();
-}).fail(function (cont, err, arg) {
-    console.log(err.stack);
-    console.error("Error: " + err);
-    process.exit(-1);
+    console.log("Okay, %d schema\nLoading index...", args);
+    index.init(peter, (error, args) => {
+        console.log("Okay");
+        if (process.argv.length > 2) {
+            let args = Array.from(process.argv);
+            args.shift();
+            args.shift();
+            args.push(function (err, arg) {
+                process.exit(0);
+            });
+            return run(args);
+        }
+        run();
+    });
 });

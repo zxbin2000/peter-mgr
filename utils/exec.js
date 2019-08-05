@@ -1,19 +1,19 @@
-var conExec;
-var downloaded = 0;
-var fileloaded = 0;
-var download_failed = 0;
-var fileload_failed = 0;
-var exec = require('child_process').exec;
-var fs = require('fs');
-var utils = require('./utils');
+let conExec;
+let downloaded = 0;
+let fileloaded = 0;
+let download_failed = 0;
+let fileload_failed = 0;
+let exec = require('child_process').exec;
+let fs = require('fs');
+let utils = require('./utils');
 
 function dowhile(func, cont, callback) {
-    var retry = 0;
+    let retry = 0;
     function _doOnce(cb) {
         func(function (err, arg) {
             //console.log('func', err);
             if (null == err) {
-                var x = cont(arg);
+                let x = cont(arg);
                 if (true == x) {
                     return process.nextTick(function () {
                         _doOnce(cb);
@@ -56,13 +56,13 @@ function doExec(cmd, cont, callback) {
  *            validate: func, dont_read: true/false, mute: true/false}
  */
 function downFile(nc, target, options, callback) {
-    var exists, checkValid, isList;
-    var paging, proj, path, conctrl, clear;
-    var timeout;
-    var dont_read = false;
-    var mute = false;
-    var pageno = 1;
-    var results = [];
+    let exists, checkValid, isList;
+    let paging, proj, path, conctrl, clear;
+    let timeout;
+    let dont_read = false;
+    let mute = false;
+    let pageno = 1;
+    let results = [];
 
     if ('function' == typeof options) {
         callback = options;
@@ -89,7 +89,7 @@ function downFile(nc, target, options, callback) {
     }
 
     function _do(callback) {
-        var url = paging ? (target+'&'+paging+'='+pageno) : target;
+        let url = paging ? (target+'&'+paging+'='+pageno) : target;
         if (!mute) {
             console.log('GET', nc.apiURL + url);
         }
@@ -119,8 +119,8 @@ function downFile(nc, target, options, callback) {
     }
     function _cont(arg) {
         if (isList) {
-            var n = 0;
-            for (var i in arg.object) {
+            let n = 0;
+            for (let i in arg.object) {
                 n ++;
                 results.push(arg.object[i]);
             }

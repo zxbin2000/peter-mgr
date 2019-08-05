@@ -2,7 +2,7 @@
 
 ## Install
 
-npm install git+ssh://git@code.xxx.com:commonsgroup/peter.git
+npm install git://github.com/zxbin2000/peter-mgr.git#v2.5.0
 
 ## Using Peter
 

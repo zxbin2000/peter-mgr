@@ -1,14 +1,13 @@
 {{
-    var URL = require('url');
-    var n = 1;
+    let URL = require('url');
+    let n = 1;
 }}
-
 
 ::  ping url
 =>  {{
-    var time = process.hrtime();
-    var o = URL.parse(url);
-    var nc = Postman(o.protocol+'//'+ o.host, {mute: true, timeout: 10000});
+    let time = process.hrtime();
+    let o = URL.parse(url);
+    let nc = Postman(o.protocol+'//'+ o.host, {mute: true, timeout: 10000});
 }}
     nc.get o.path {nojson: true}
 =>  {{
@@ -34,4 +33,3 @@
 }}
     ping argv[1]
 ;;
-

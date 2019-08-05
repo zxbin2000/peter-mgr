@@ -1,6 +1,6 @@
-var assert = require('assert');
-var sprintf = require("sprintf-js").sprintf;
-var utils = require('../utils/utils');
+let assert = require('assert');
+let sprintf = require("sprintf-js").sprintf;
+let utils = require('../utils/utils');
 
 function Lock(name) {
     this.name = name;
@@ -40,7 +40,7 @@ Lock.prototype.unlock = function (who, callback) {
         });
     }
     process.nextTick(function (self) {
-        var next = self.waiting.shift();
+        let next = self.waiting.shift();
         if (next) {
             self.owner = next[0];
             next[1](null, 1);
@@ -60,7 +60,7 @@ Lock.prototype.lockedBy = function () {
 
 module.exports = {
     create: function (name) {
-        var lock = new Lock(name);
+        let lock = new Lock(name);
         return lock;
     }
 };

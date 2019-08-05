@@ -2,47 +2,49 @@
  * Created by linshiding on 3/10/15.
  */
 
-var assert = require('assert');
-var ascii = require('../utils/ascii');
-var ObjectID = require('mongodb').ObjectID;
+'use strict'
 
-var spaceCode = ascii[' '];
-var tabCode = ascii['\t'];
-var returnCode = ascii['\n'];
-var carryCode = ascii['\r'];
-var slashCode = ascii['/'];
-var commaCode = ascii[','];
-var semicolonCode = ascii[';'];
-var colonCode = ascii[':'];
-var leftBraceCode = ascii['{'];
-var rightBraceCode = ascii['}'];
-var atCode = ascii['@'];
-var starCode = ascii['*'];
-var leftBracketCode = ascii['['];
-var rightBracketCode = ascii[']'];
-var tildeCode = ascii['~'];
-var exclamCode = ascii['!'];
-var hashCode = ascii['#'];
-var digitCode0 = ascii['0'];
-var digitCode9 = ascii['9'];
-var quoteCode = ascii['\''];
-var doubleQuoteCode = ascii['"'];
-var dotCode = ascii['.'];
-var pCode = ascii['p'];
-var plusCode = ascii['+'];
-var alphaCode_a = ascii['a'];
-var alphaCode_z = ascii['z'];
-var alphaCode_A = ascii['A'];
-var alphaCode_Z = ascii['Z'];
+let assert = require('assert');
+let ascii = require('../utils/ascii');
+let ObjectID = require('mongodb').ObjectID;
+
+let spaceCode = ascii[' '];
+let tabCode = ascii['\t'];
+let returnCode = ascii['\n'];
+let carryCode = ascii['\r'];
+let slashCode = ascii['/'];
+let commaCode = ascii[','];
+let semicolonCode = ascii[';'];
+let colonCode = ascii[':'];
+let leftBraceCode = ascii['{'];
+let rightBraceCode = ascii['}'];
+let atCode = ascii['@'];
+let starCode = ascii['*'];
+let leftBracketCode = ascii['['];
+let rightBracketCode = ascii[']'];
+let tildeCode = ascii['~'];
+let exclamCode = ascii['!'];
+let hashCode = ascii['#'];
+let digitCode0 = ascii['0'];
+let digitCode9 = ascii['9'];
+let quoteCode = ascii['\''];
+let doubleQuoteCode = ascii['"'];
+let dotCode = ascii['.'];
+let pCode = ascii['p'];
+let plusCode = ascii['+'];
+let alphaCode_a = ascii['a'];
+let alphaCode_z = ascii['z'];
+let alphaCode_A = ascii['A'];
+let alphaCode_Z = ascii['Z'];
 
 function printSchema(schema, level) {
-    var str = "";
-    var sch, type;
+    let str = "";
+    let sch, type;
 
-    var tab = "";
-    for (var i = 0; i < level; i++) tab += "\t";
+    let tab = "";
+    for (let i = 0; i < level; i++) tab += "\t";
 
-    for (var x in schema) {
+    for (let x in schema) {
         sch = schema[x];
 
         type = sch.__type__;
@@ -53,7 +55,7 @@ function printSchema(schema, level) {
 
                 case '__ref__':
                     str += tab + x + " : ";
-                    for (var y in sch) {
+                    for (let y in sch) {
                         str += y + ", ";
                     }
                     str += "\n";
@@ -61,7 +63,7 @@ function printSchema(schema, level) {
 
                 case '__ziplist__':
                     str += tab + x + " : ";
-                    for (var y in sch) {
+                    for (let y in sch) {
                         str += JSON.stringify(sch[y]) + ", ";
                     }
                     str += "\n";
@@ -184,10 +186,10 @@ function _processDefault(schema, attr, type, value) {
 }
 
 function genPair(which, name, type) {
-    var cur = which[1][which[0]];
-    var isSet = false;
-    var key = null;
-    var sch = {__type__: type};
+    let cur = which[1][which[0]];
+    let isSet = false;
+    let key = null;
+    let sch = {__type__: type};
 
     switch (name.charCodeAt(0)) {
         case starCode:
@@ -222,7 +224,7 @@ function genPair(which, name, type) {
             sch.__type__ = '__list__';
             sch.__element__ = type;
 
-            for (var i = 1; i < len - 1; i++) {
+            for (let i = 1; i < len - 1; i++) {
                 if (name.charCodeAt(i) == exclamCode) { // !
                     key = name.substring(i + 1, len - 1);
                     name = name.substring(0, i);
@@ -238,6 +240,8 @@ function genPair(which, name, type) {
                     break;
                 }
             }
+            name = name.replace('[', '');
+            name = name.replace(']', '');
             break;
 
         case leftBraceCode:  // {
@@ -271,7 +275,7 @@ function genPair(which, name, type) {
 
         case pCode:
             if ('peer' == name) {
-                var parent = cur.__up__;
+                let parent = cur.__up__;
                 if ('__link__' == cur.__type__
                     && '~' == cur.__name__
                     && '__container__' == cur.__element__
@@ -332,7 +336,7 @@ function genPair(which, name, type) {
         default:
             assert(type == sch.__type__);
 
-            var str = getRealType(type);
+            let str = getRealType(type);
             if (str == null) {
                 /*console.log("TO_SET_TYPE: %s %s.%s", sch.__type__, cur.__name__, name);
                  if (sch.__type__ == which[1][1].__name__ && sch.__type__.charCodeAt(0) != atCode) { // self-embedding not allowed
@@ -354,7 +358,7 @@ function genPair(which, name, type) {
 }
 
 function enterContainer(which, name, type, inherit) {
-    var sch = genPair(which, name, type=='[' ? '__array__' : '__container__');
+    let sch = genPair(which, name, type=='[' ? '__array__' : '__container__');
     if (null == sch)
         return null;
 
@@ -369,12 +373,12 @@ function enterContainer(which, name, type, inherit) {
 
 function leaveContainer(which, name, type) {
     assert(0 < which[0]);
-    var sch = which[1][which[0]];
+    let sch = which[1][which[0]];
     which[0]--;
 
     assert(type=='}' && (sch.__type__=='__container__' || sch.__type__=='__peter__' || sch.__element__=='__container__')
         || type==']' && sch.__element__=='__array__', type + ' ' + sch.__type__);
-    var parent = which[1][which[0]];
+    let parent = which[1][which[0]];
     if (sch.__ziplist__ && 0!=which[0]) {
         _addToList(parent, '__ziplist__', sch.__name__);
     }
@@ -384,10 +388,10 @@ function leaveContainer(which, name, type) {
 function parseData(data) {
     assert(data instanceof Buffer);
 
-    var i = 0, start = -1;
-    var single = null;
-    var cur = {};
-    var which = [
+    let i = 0, start = -1;
+    let single = null;
+    let cur = {};
+    let which = [
         0,        // level
         [cur],    // stack
         [],       // untyped
@@ -404,7 +408,7 @@ function parseData(data) {
     }
 
     function _getToken() {
-        var str;
+        let str;
         if (single) {
             str = single;
             single = null;
@@ -421,8 +425,8 @@ function parseData(data) {
         if (start == -1)
             start = i;
 
-        var b = i;
-        var expect = 0;
+        let b = i;
+        let expect = 0;
         while (i < data.length) {
             if (0 != expect) {
                 if (data[i] == expect) {
@@ -480,7 +484,7 @@ function parseData(data) {
         return false;
     }
 
-    var name = null
+    let name = null
         , colon = false
         , inherit = null;
 
@@ -546,8 +550,8 @@ function parseData(data) {
         return true;
     }
 
-    var token = null;
-    var lastslash = false;
+    let token = null;
+    let lastslash = false;
     while (null != (token = _getToken())) {
         if (token == '/') {
             if (lastslash) {
@@ -578,7 +582,7 @@ function parseData(data) {
 }
 
 function copySchema(to, from) {
-    for (var x in from) {
+    for (let x in from) {
         if ('__' != x.substring(0, 2)
             || '__requirelist__' == x
             || '__defaultlist__' == x
@@ -588,7 +592,7 @@ function copySchema(to, from) {
 }
 
 function setupLink(sch, type) {
-    var attr;
+    let attr;
     if (!sch.hasOwnProperty('peer')) {
         attr = {__type__: 'PeterId', __up__: sch, __name__: 'peer', __element__: type};
         sch.peer = attr;
@@ -604,12 +608,12 @@ function setupLink(sch, type) {
 }
 
 function installLink(cur, sch, peter, root, global) {
-    var linkname = sch.__name__
+    let linkname = sch.__name__
         , peername
         , peerlink;
 
     if ('__container__' === sch.__element__) {
-        var peersch = sch.peer;
+        let peersch = sch.peer;
         if (undefined == peersch) {
             console.log("Error: no peer defined in %s.%s container", peter.__name__, linkname);
             return false;
@@ -638,7 +642,7 @@ function installLink(cur, sch, peter, root, global) {
     }
 
     // get peer's schema
-    var refSchema;
+    let refSchema;
     if (root.hasOwnProperty(peername)) {
         refSchema = root[peername];
     }
@@ -651,7 +655,7 @@ function installLink(cur, sch, peter, root, global) {
 
     //console.log("finding %s.%s", refSchema.__name__, peerlink);
     if (refSchema.hasOwnProperty(peerlink)) {
-        var sch2 = refSchema[peerlink];
+        let sch2 = refSchema[peerlink];
         //console.log("%s %s %s", sch2.__type__, peter.__name__, sch2.__element__);
         if (sch2.hasOwnProperty('__to__') && sch2.__to__ == sch)
             return true;
@@ -679,8 +683,8 @@ function installLink(cur, sch, peter, root, global) {
 // check set, list, link for its element type
 // check other's type
 function checkTypeAndInstallClass(sch, peter, root, global) {
-    var type = sch.__type__;
-    var inset = false;
+    let type = sch.__type__;
+    let inset = false;
 
     switch (type) {
         case '__list__':
@@ -702,7 +706,7 @@ function checkTypeAndInstallClass(sch, peter, root, global) {
             break;
     }
 
-    var refSchema;
+    let refSchema;
     if (root.hasOwnProperty(type)) {
         refSchema = root[type];
     }
@@ -742,10 +746,10 @@ function checkTypeAndInstallClass(sch, peter, root, global) {
 }
 
 function installSchema(which, global) {
-    var untyped = which[2]
+    let untyped = which[2]
         , root = which[1][0]
         , inherits = which[3];
-    for (var x in untyped) {
+    for (let x in untyped) {
         var cur = untyped[x][0]
             , sch = untyped[x][1]
             , peter = untyped[x][2];
@@ -801,20 +805,19 @@ function installSchema(which, global) {
                 check[sset.__name__] = true;
             }
 
-            for (var x in sset.__ref__) {
+            for (let x in sset.__ref__) {
                 if (!check[sset.__ref__[x].__name__]) {
                     _addSchemaRefStr(sch, sset.__ref__[x], check);
                 }
             }
-        }
-        else if (sch != sset) {
+        } else if (sch != sset) {
             sch.__str__ = sset.__str__ + "\n" + sch.__str__;
             check[sset.__name__] = true;
         }
     }
 
     function _setupInheritance(sch, inherit) {
-        var parent;
+        let parent;
         if (root.hasOwnProperty(inherit)) {
             parent = root[inherit];
         }
@@ -830,7 +833,7 @@ function installSchema(which, global) {
         return true;
     }
 
-    for (var x in root) {
+    for (let x in root) {
         sch = root[x];
         //console.log("install %s", sch.__name__);
         if (sch.__type__ == '__peter__') {
@@ -846,14 +849,14 @@ function installSchema(which, global) {
     return true;
 }
 
-//var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+//let checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
 function isValidPeterId(id) {
     if (null == id)
         return false;
 
     if ('string' === typeof id && id.length == 24) {
-        for (var i=0; i<24; i++) {
-            var c = id.charCodeAt(i);
+        for (let i=0; i<24; i++) {
+            let c = id.charCodeAt(i);
             if (!(c>=digitCode0 && c<=digitCode9
               || c>=alphaCode_A && c<=alphaCode_Z
               || c>=alphaCode_a && c<=alphaCode_z))
@@ -896,7 +899,7 @@ function checkSimpleType(value, type) {
 }
 
 function checkSimpleTypeAndReplcaceValue(ind, type, parentJson) {
-    var value = parentJson[ind];
+    let value = parentJson[ind];
     switch (type) {
         case 'Integer':
         case 'Number':
@@ -904,7 +907,7 @@ function checkSimpleTypeAndReplcaceValue(ind, type, parentJson) {
                 return true;
             }
             if ('string' === typeof value) {
-                var n = parseFloat(value);
+                let n = parseFloat(value);
                 if (!isNaN(n)) {
                     parentJson[ind] = n;
                     return true;
@@ -919,7 +922,7 @@ function checkSimpleTypeAndReplcaceValue(ind, type, parentJson) {
             if ('boolean' === typeof value)
                 return true;
             if ('string' === typeof value) {
-                var lower = value.toLowerCase();
+                let lower = value.toLowerCase();
                 if ('true'==lower || 'false'==lower) {
                     parentJson[ind] = ('true'==lower);
                     return true;
@@ -960,7 +963,7 @@ function checkTypeAndReplcaceValue(name, sch, parentJson) {
     if (!sch)
         return false;
 
-    var value = parentJson[name];
+    let value = parentJson[name];
     switch (sch.__type__) {
         case 'Integer':
         case 'String':
@@ -988,9 +991,9 @@ function _findAttribute(sch, name) {
 }
 
 function findAttribute(sch, name) {
-    var arr = name.split('.');
-    var attr = sch;
-    for (var x in arr) {
+    let arr = name.split('.');
+    let attr = sch;
+    for (let x in arr) {
         attr = _findAttribute(attr, arr[x]);
         if (!attr)
             return null;
@@ -1001,7 +1004,7 @@ function findAttribute(sch, name) {
 function findAttribute2(sch, name) {
     // try to add []
     if (name.substr(0, 1) != '[') {
-        var name2 = '[' + name + ']';
+        let name2 = '[' + name + ']';
         if (sch.hasOwnProperty(name2)) {
             return sch[name2];
         }
@@ -1013,14 +1016,14 @@ function findAttribute2(sch, name) {
 }
 
 function checkRequired(sch, json) {
-    var list = sch.__requirelist__;
+    let list = sch.__requirelist__;
     if (undefined != list) {
-        for (var i in list) {
+        for (let i in list) {
             if (!json.hasOwnProperty(list[i])) {
                 // try to add []
-                var name = list[i];
+                let name = list[i];
                 if (name.substr(0, 1) == '[') {
-                    var name2 = name.substr(1, name.length - 2);
+                    let name2 = name.substr(1, name.length - 2);
                     if (json.hasOwnProperty(name2)) {
                         json[name] = json[name2];
                         delete json[name2];
@@ -1064,8 +1067,8 @@ function checkOne(sch, json, type, required) {
             // check each attributes in the element
             //console.log("Check %s", JSON.stringify(json));
             //console.log("%s {", sch.__name__);
-            var attr;
-            for (var x in json) {
+            let attr;
+            for (let x in json) {
                 if (undefined == json[x]) {
                     delete json[x];
                     continue;
@@ -1115,7 +1118,7 @@ function checkOne(sch, json, type, required) {
 function check(sch, json, required) {
     assert(sch, "null schema is provided");
 
-    var value;
+    let value;
     switch (sch.__type__) {
         case '__list__':
         case '__set__':
@@ -1129,7 +1132,7 @@ function check(sch, json, required) {
 
             switch (sch.__element__) {
                 case '__container__':
-                    for (var x in json) {
+                    for (let x in json) {
                         value = json[x];
                         if (!checkOne(sch, value, sch.__element__, required)) {
                             return false;
@@ -1145,7 +1148,7 @@ function check(sch, json, required) {
                     break;
 
                 default:
-                    for (var x in json) {
+                    for (let x in json) {
                         if (undefined != json[x]) {
                             if (!checkSimpleTypeAndReplcaceValue(x, sch.__element__, json)) {
                                 console.log("Error: invalid value '%s' in %s.%s", json[x], sch.__name__, x);
@@ -1167,7 +1170,7 @@ function check(sch, json, required) {
     return true;
 }
 
-var BasicSchemas;
+let BasicSchemas;
 function getBasicTypeSchema(type) {
     if (BasicSchemas) {
         return BasicSchemas[type];
@@ -1175,7 +1178,7 @@ function getBasicTypeSchema(type) {
 
     const types = ['String', 'Integer', 'Number', 'BOOL', 'Time', 'PeterID', 'PeterId', 'Double', 'Object'];
     BasicSchemas = {};
-    for (var x in types) {
+    for (let x in types) {
         BasicSchemas[types[x]] = {__name__: types[x], __type: types[x]};
     }
     return BasicSchemas[type];
@@ -1183,7 +1186,7 @@ function getBasicTypeSchema(type) {
 
 function parse(data, global) {
     try {
-        var which = parseData(data);
+        let which = parseData(data);
 
         if (which != null && installSchema(which, global)) {
             return which[1][0];

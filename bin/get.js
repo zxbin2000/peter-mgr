@@ -1,32 +1,31 @@
 #!/usr/bin/env node
 
-var peter, index, utils;
+let peter, index, utils;
 try {
     peter = require('./manager/peter').createManager();
     index = require('./index/index');
     utils = require('./utils/utils');
 } catch (e) {
-    var _peter = require('peter');
+    let _peter = require('peter');
     peter = _peter.createManager();
     index = _peter.Index;
     utils = _peter.Utils;
 }
-var Thenjs = require('thenjs');
-var fs = require('fs');
-var beautify = require('js-beautify').js_beautify;
+let fs = require('fs');
+let beautify = require('js-beautify').js_beautify;
 
-var mongoaddr = utils.mongoAddrFromConf();;
-var argv = utils.getRealArgv(__filename);
+let mongoaddr = utils.mongoAddrFromConf();;
+let argv = utils.getRealArgv(__filename);
 
 if (argv.length < 2) {
     console.log('get pid [-np] [-o [out.json]]');
     process.exit(-1);
 }
 
-var out, pid, bPrint = true;
+let out, pid, bPrint = true;
 pid = argv[1];
 
-for (var i=2; i<argv.length; i++) {
+for (let i=2; i < argv.length; i++) {
     switch (argv[i]) {
         case '-np':
             bPrint = false;
@@ -41,33 +40,25 @@ for (var i=2; i<argv.length; i++) {
             break;
     }
 }
-console.log('get %s', pid, out ? '-> '+out : '');
+console.log('get %s', pid, out ? '-> ' + out : '');
 
-Thenjs(function (cont) {
-    console.log("Fetching schemas...");
-    peter.bindDb(mongoaddr, cont);
-})
-.then(function(cont, arg) {
-    console.log("Okay, %d schema\nLoading index...", arg);
-    peter.get(pid, cont);
-})
-.then(function(cont, arg) {
-    var str = beautify(JSON.stringify(arg));//JSON.stringify(arg, null, 0);
+peter.bindDb(mongoaddr, (error, args) => {
+  if(error) {
+    console.log('Error: ', error);
+    process.exit(-1);
+  }
+  peter.get(pid, (error, args) => {
+    if(error) {
+      console.log('Error: ', error);
+      process.exit(-1);
+    }
+    let str = beautify(JSON.stringify(arg));
     if (bPrint) {
         console.log(str);
     }
     if (undefined != out) {
         fs.writeFile(out, str, cont);
     }
-    else {
-        process.exit(0);
-    }
-})
-.then(function(cont, arg) {
-    console.log('saved to', out);
     process.exit(0);
-})
-.fail(function (cont, err, arg) {
-    console.error("Error: " + err.stack);
-    process.exit(-1);
+  });
 });

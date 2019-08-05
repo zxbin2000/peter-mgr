@@ -1,10 +1,10 @@
 {{
-    var util = require('util');
+    let util = require('util');
 
     function sortObj(obj) {
-        var keys = Object.keys(obj).sort();
-        var out = {};
-        for (var x in keys) {
+        let keys = Object.keys(obj).sort();
+        let out = {};
+        for (let x in keys) {
             out[keys[x]] = obj[keys[x]];
         }
         return out;
@@ -24,9 +24,9 @@
     }
 
     function aggrAttrs(objs, attr) {
-        var out = {};
-        for (var x in objs) {
-            var id = stringify(objs[x][attr]);
+        let out = {};
+        for (let x in objs) {
+            let id = stringify(objs[x][attr]);
             if (!out[id]) {
                 out[id] = [];
             }
@@ -36,10 +36,10 @@
     }
 
     function aggrObjs(objs) {
-        var out = {};
-        for (var x in objs) {
-            for (var y in objs[x]) {
-                var id = stringify(y);
+        let out = {};
+        for (let x in objs) {
+            for (let y in objs[x]) {
+                let id = stringify(y);
                 if (!out[id]) {
                     out[id] = [];
                 }
@@ -50,7 +50,6 @@
     }
 }}
 
-
 ::  ls collection attrs
 =>  {{
     console.log('query', collection, attrs);
@@ -58,23 +57,22 @@
     peter.query collection {} (attrs && attrs.length ? {project: attrs} : {})
 <=  {{
     if (!attrs || !attrs.length) {
-        var ret = aggrObjs($@);
-        for (var y in ret) {
+        let ret = aggrObjs($@);
+        for (let y in ret) {
             console.log('\t%s: %d', y, ret[y].length);
         }
         $callback null 0
     }
-    for (var x in attrs) {
-        var ret = aggrAttrs($@, attrs[x]);
+    for (let x in attrs) {
+        let ret = aggrAttrs($@, attrs[x]);
         console.log('Attr: %s', attrs[x]);
-        for (var y in ret) {
+        for (let y in ret) {
             console.log('\t%s: %d', y, ret[y].length);
         }
     }
 }}
     null 0
 ;;
-
 
 ::  main argv conf
 =>  {{
@@ -86,4 +84,3 @@
     peter.bindDb argv[1]
 =>  ls argv[2] argv.slice(3)
 ;;
-

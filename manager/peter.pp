@@ -3,13 +3,13 @@
 
 ::  _bindDb dbUrl ?options
 =>  {{
-    var self = this;
+    let self = this;
     if (self.db) {
         $callback 'Already bound' null
     }
-    var opts = options || {};
+    let opts = options || {};
     opts.useNewUrlParser = true;
-    var client = new MongoClient(dbUrl, opts);
+    let client = new MongoClient(dbUrl, opts);
 }}
     client.connect
 =>  {{
@@ -29,7 +29,7 @@
 
 ::  _procClear peter
 =>  {{
-    var names = peter.sm.getAllSchemaName();
+    let names = peter.sm.getAllSchemaName();
     names.push('_schema');
 }}
     ! names _drop $= peter.db
@@ -42,7 +42,7 @@
 <-  $? 0
 <=  null 1
 ->  {{
-    var err = $?;
+    let err = $?;
 
     $return MongoOP.removeMap _getCollection(self, pid1) pid1 link1 'peer' pid2
     <=  err 0

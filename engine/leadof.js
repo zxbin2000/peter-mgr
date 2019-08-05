@@ -1,6 +1,6 @@
-var assert = require('assert');
-var sprintf = require("sprintf-js").sprintf;
-var utils = require('../utils/utils');
+let assert = require('assert');
+let sprintf = require("sprintf-js").sprintf;
+let utils = require('../utils/utils');
 
 function Leadof(name, ttl) {
     this.name = name;
@@ -25,11 +25,11 @@ function extendTimer(self) {
 // Args: func[, args...], callback
 Leadof.prototype.run = function () {
     assert(arguments.length >= 2);
-    var args = Array.prototype.slice.call(arguments);
-    var func = args.shift();
-    var callback = args.pop();
+    let args = Array.prototype.slice.call(arguments);
+    let func = args.shift();
+    let callback = args.pop();
     assert('function' == typeof callback, 'callback not function: '+callback);
-    var self = this;
+    let self = this;
 
     if (false === self.loading) {
         extendTimer(self);
@@ -64,14 +64,14 @@ Leadof.prototype.run = function () {
         else {
             self.loading = undefined;
         }
-        for (var x in self.waiting) {
+        for (let x in self.waiting) {
             process.nextTick(self.waiting[x], err, arg);
         }
         self.waiting = [];
         callback(err, arg);
     });
 
-    var _this = null;
+    let _this = null;
     if ('function' != typeof func) {
         _this = func;
         func = args.shift();
@@ -112,7 +112,7 @@ Leadof.prototype.wait = function (noMatterStartedOrNot, callback) {
 
 module.exports = {
     create: function (name, ttl) {
-        var lof = new Leadof(name, ttl);
+        let lof = new Leadof(name, ttl);
         return lof;
     }
 };
