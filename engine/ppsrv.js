@@ -231,7 +231,7 @@ function _on(target, pnames, req, res, data) {
         console.log('<-', utils.stringify(data));
     }
     if (verbose.cost) {
-        let time = process.hrtime();
+        var time = process.hrtime();
     }
 
     function _verbose(err, msg) {
