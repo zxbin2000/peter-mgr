@@ -928,14 +928,19 @@ function replaceElementByIndex(pid, contname, index, _new, replaceAll, callback)
 function removeElement(pid, setname, elem, callback) {
     let self = this;
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
-    
+
     if (null == ret)
         return;
     pid = ret[0];
     let attr = ret[1];
 
-    //assert(attr.__key__ == '', "keyname == '' in removeElement");
-    MongoOP.removeSet(_getCollection(self, pid), pid, setname, elem, callback);
+    MongoOP.removeSet(_getCollection(self, pid), pid, setname, elem, function(err, arg) {
+        if(err === 'Not existing') {
+            return callback(null, { errcode: err });
+        } else {
+            return callback(err, (arg && arg.result) ? arg.result : arg);
+        }
+    });
 }
 
 function removeElementsByCond(pid, cont_name, cond, callback) {
@@ -945,7 +950,13 @@ function removeElementsByCond(pid, cont_name, cond, callback) {
         return;
     pid = ret[0];
 
-    MongoOP.removeElementsByCond(_getCollection(self, pid), pid, cont_name, cond, callback);
+    MongoOP.removeElementsByCond(_getCollection(self, pid), pid, cont_name, cond, function(err, arg) {
+      if(err === 'Not existing') {
+        return callback(null, { errcode: err });
+      } else {
+        return callback(err, (arg && arg.result) ? arg.result : arg);
+      }
+    });
 }
 
 function removeElementByKey(pid, setname, key, callback) {
@@ -959,7 +970,13 @@ function removeElementByKey(pid, setname, key, callback) {
     assert(attr.__key__ != '', "keyname != '' in removeElementByKey");
     if (attr[attr.__key__].__type__ == 'Integer')
         key = +key;
-    MongoOP.removeMap(_getCollection(self, pid), pid, setname, attr.__key__, key, callback);
+    MongoOP.removeMap(_getCollection(self, pid), pid, setname, attr.__key__, key, function(err, arg) {
+        if(err === 'Not existing') {
+          return callback(null, { errcode: err });
+        } else {
+          return callback(err, (arg && arg.result) ? arg.result : arg);
+        }
+    });
 }
 
 function getElementByKey(pid, setname, key, options, callback) {
@@ -993,10 +1010,11 @@ function getElementByKey(pid, setname, key, options, callback) {
                     return callback(options.graceful ? null : 'Not existing', null);
                 });
             }
-            if (options.graceful && 'Not existing'==err) {
-                return callback(null, null);
+            if ('Not existing' == err) {
+                return callback(null, { errcode: err });
+            } else {
+              return callback(err, (arg && arg.result) ? arg.result : arg);
             }
-            return callback(err, arg);
         });
     }
 
@@ -1006,10 +1024,11 @@ function getElementByKey(pid, setname, key, options, callback) {
         if (null == err) {
             return unzipAny(self.sm.getByKey(pid.getSchemaKey()), arg[0], options, callback);
         }
-        if (options.graceful && 'Not existing'==err) {
-            return callback(null, null);
+        if ('Not existing' == err) {
+            return callback(null, { errcode: err });
+        } else {
+            return callback(err, (arg && arg.result) ? arg.result : arg);
         }
-        return callback(err, arg);
     });
 }
 

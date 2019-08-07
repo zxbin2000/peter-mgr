@@ -458,7 +458,7 @@ function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
     key[keyname] = keyvalue;
     update[setname] = key;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$pull: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $pull: update }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)

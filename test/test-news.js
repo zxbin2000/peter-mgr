@@ -65,9 +65,13 @@ describe('Test news', () => {
       let s_user;
       let comment = '5d4a7a960000061468f692fd';
       return peter.findOneAsync('@User', {}).then(args => {
-        return peter.popAsync(comment, 'tags', true);
+        s_user = args;
+        return peter.pushAsync(comment, 'read_by', s_user._id);
       }).then(args => {
         console.log('---pop---', args);
+        return peter.removeElementAsync(comment, 'read_by', s_user._id);
+      }).then(args => {
+        console.log('--remove--', args);
       }).catch(error => {
         console.log('Error: ', error);
         should.not.exist(error);
