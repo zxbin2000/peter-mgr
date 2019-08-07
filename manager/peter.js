@@ -750,48 +750,55 @@ function getLinks(pid, linkname, callback) {
     MongoOP.get(_getCollection(self, pid), pid, linkname, callback);
 }
 
-// options: {upsert: ? (default: true), update: ? (default: false)}
-function push(pid, listname, elem, option, callback) {
-    let update, upsert;
-    let self = this;
-    if (undefined == callback) {
-        callback = option;
-        upsert = true;
-        update = false;
+function push(pid, listname, elem, update, callback) {
+    if('function' === typeof update) {
+      callback = update;
+      update = false;
     }
-    else {
-        upsert = (false == option.upsert) ? false : true;
-        update = option.update ? true : false;
-    }
-    assert(callback);
+    assert('boolean' === typeof update, 'Invalid parameter');
+    assert(callback, 'callback cannot be null.');
 
+    let self = this;
     let ret = _checkSchemaAndCallback(self.sm, pid, listname, elem, callback);
     if (null == ret)
         return;
-    pid = ret[0];
+    let _id = ret[0];
     let attr = ret[1];
     Schema.fillDefault(attr, elem, true);
+    let collection = _getCollection(self, _id);
 
     Schema.zipAny(attr, elem, function (err, arg) {
         switch (attr.__type__) {
         case '__list__':
-            MongoOP.pushList(_getCollection(self, pid), pid, listname, elem, upsert, callback);
+            MongoOP.pushList(collection, _id, listname, elem, function(err, arg) {
+              callback(err, arg.result ? arg.result : arg);
+            });
             break;
 
         case '__keyed__':
-            MongoOP.pushMap(_getCollection(self, pid), pid, listname, attr.__key__, elem, upsert, function (err, arg) {
+            MongoOP.pushMap(collection, _id, listname, attr.__key__, elem, function (err, arg) {
                 if (null == err) {
-                    return callback(null, arg);
+                    return callback(null, arg.result);
                 }
-                if ('Already existed' == err && update) {
-                    return MongoOP.replaceMap(_getCollection(self, pid), pid, listname, attr.__key__, elem, true, callback);
+                if ('Already existed' == err) {
+                    if(update) {
+                      return MongoOP.replaceMap(collection, _id, listname, attr.__key__, elem, true, function(err, arg) {
+                        callback(err, arg.result ? arg.result : arg);
+                      });
+                    } else {
+                      return callback(null, { errcode: err });
+                    }
                 }
-                callback(err, arg);
+                callback(err, arg.result);
             });
             break;
 
         case '__set__':
-            MongoOP.pushSet(_getCollection(self, pid), pid, listname, elem, upsert, callback);
+            MongoOP.pushSet(collection, _id, listname, elem, function(err, arg) {
+              process.nextTick(function () {
+                callback(err, arg.result ? arg.result : arg);
+              });
+            });
             break;
 
         default:
@@ -805,11 +812,11 @@ function push(pid, listname, elem, option, callback) {
 
 function pop(pid, setname, first, callback) {
     let self = this;
-    if (undefined == callback) {
-        assert('function' === typeof first);
+    if('function' === typeof first) {
         callback = first;
         first = false;
     }
+    assert('function' === typeof callback, 'callback cannot be null.');
 
     let ret = _checkSchemaAndCallback(self.sm, pid, setname, null, callback);
     if (null == ret)
@@ -818,17 +825,22 @@ function pop(pid, setname, first, callback) {
     let attr = ret[1];
 
     switch (attr.__type__) {
-    case '__list__':
-    case '__set__':
-    case '__keyed__':
-        MongoOP.pop(_getCollection(self, pid), pid, setname, first, callback);
-        break;
-
-    default:
-        process.nextTick(function () {
-            callback("'" + setname + "' is not a container", null);
-        });
-        break;
+        case '__list__':
+        case '__set__':
+        case '__keyed__':
+            MongoOP.pop(_getCollection(self, pid), pid, setname, first, function(err, arg) {
+                if('Not existing' === err) {
+                    return callback(null, { errcode: err });
+                } else {
+                    return callback(err, arg);
+                }
+            });
+            break;
+        default:
+            process.nextTick(function () {
+                callback("'" + setname + "' is not a container", null);
+            });
+            break;
     }
 }
 
@@ -916,12 +928,13 @@ function replaceElementByIndex(pid, contname, index, _new, replaceAll, callback)
 function removeElement(pid, setname, elem, callback) {
     let self = this;
     let ret = _checkSetSchemaAndCallback(self.sm, pid, setname, elem, callback);
+    
     if (null == ret)
         return;
     pid = ret[0];
     let attr = ret[1];
 
-    assert(attr.__key__ == '', "keyname == '' in removeElement");
+    //assert(attr.__key__ == '', "keyname == '' in removeElement");
     MongoOP.removeSet(_getCollection(self, pid), pid, setname, elem, callback);
 }
 
@@ -1553,7 +1566,7 @@ Manager.prototype = {
                         // update the value of 'name' when it exists
     insert: insert,     // args: pid, name, value, callback
                         // insert <name:value> when it does not exist
-    push: push,         // args: pid, container, element, callback
+    push: push,         // args: pid, container, element, [options, update: false], callback
                         // for list: just push
                         // for map: if the key exists, then push
                         // for set: if the value exists, then push

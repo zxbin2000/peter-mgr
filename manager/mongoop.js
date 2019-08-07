@@ -308,88 +308,75 @@ function remove(collection, docid, fields, callback) {
     });
 }
 
-function pushList(collection, docid, listname, elem, upsert, callback) {
-    assert(callback);
-    let cond = {}
-        , add = {};
+function pushList(collection, docid, listname, elem, callback) {
+    assert(callback, 'callback cannot be null.');
 
+    let cond = {}, add = {};
     cond['_id'] = docid;
     add[listname] = elem;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $push: add }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
-        if (0 == arg.result.n)
-            return callback("Not existing", null);
         callback(null, arg);
     });
 }
 
-function pushMap(collection, docid, setname, keyname, elem, upsert, callback) {
-    assert(callback);
-    assert(elem.hasOwnProperty(keyname), 'elem.hasOwnProperty(keyname)');
+function pushMap(collection, docid, setname, keyname, elem, callback) {
+    assert(callback, 'callback cannot be null.');
+    assert(elem.hasOwnProperty(keyname), `elem.hasOwnProperty(${keyname})`);
+
     let setwithkey = setname + '.' + keyname
         , cond = {}
         , add = {};
 
-    cond[setwithkey] = {$ne: elem[keyname]};
+    cond[setwithkey] = { $ne: elem[keyname] };
     cond['_id'] = docid;
     add[setname] = elem;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
-        if (null != err) {
-            return callback(11000 == err.code ? "Already existed" : err, 0);
-        }
-        if (1 != arg.result.n || 1 != arg.result.ok) {
-            return callback("Not existing", 0);
+    runMongoCmd(collection, collection.updateOne, cond, { $push: add }, function (err, arg) {
+        if (null === err && (arg.result && arg.result.nModified) === 0) {
+            return callback("Already existed", null);
         }
         return callback(null, arg);
     });
 }
 
-function pushSet(collection, docid, setname, elem, upsert, callback) {
-    assert(callback);
-    let cond = {}
-        , add = {};
+function pushSet(collection, docid, setname, elem, callback) {
+    assert(callback, 'callback cannot be null.');
 
-    cond[setname] = {$ne: elem};
+    let cond = {}, add = {};
     cond['_id'] = docid;
     add[setname] = elem;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$push: add}, {upsert: upsert}, function (err, arg) {
-        if (null != err) {
-            return callback(11000 == err.code ? "Already existed" : err, 0);
-        }
-        if (1 != arg.result.n || 1 != arg.result.ok) {
-            return callback("Not existing", 0);
-        }
-        return callback(null, arg);
-    });
+    runMongoCmd(collection, collection.updateOne, cond, { $addToSet: add }, callback);
 }
 
 // first is default to false
 function pop(collection, docid, setname, first, callback) {
-    assert(callback);
+    assert(callback, 'callback cannot be null.');
 
     let cond = {}
         , update = {}
         , fields = {};
 
     cond['_id'] = docid;
-    cond[setname] = {$exists: true};
+    cond[setname] = { $exists: true };
     update[setname] = first ? -1 : 1;
-    fields[setname] = 1;//{ '$slice': 1 };
-    // !! bug in mongodb driver, can't accept $slice modifier
-    runMongoCmd(collection, collection.findOneAndUpdate, cond, [], {$pop: update}, {fields: fields}, function (err, arg) {
+    fields[setname] = 1;
+    
+    runMongoCmd(collection, collection.findOneAndUpdate, cond, { $pop: update }, { 
+      projection: fields,
+      returnOriginal: false
+    }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
 
-        let ret = arg[setname];
+        let ret = arg.value ? arg.value[setname] : undefined;
         if (undefined == ret || ret.length < 1)
             return callback("Not existing", null);
 
-        // !! bug in mongodb driver, can't accept $slice modifier, so we have to do it ourselves
-        callback(null, first ? ret.shift() : ret.pop());
+        callback(null, ret);
     });
 }
 
@@ -406,15 +393,14 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
     cond['_id'] = docid;
     if (replaceAll) {
         update[setname + '.$'] = elem;
-    }
-    else {
+    } else {
         for (let x in elem) {
             if (x != keyname)
                 update[setname + '.$.' + x] = elem[x];
         }
     }
 
-    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $set: update }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
