@@ -244,15 +244,14 @@ function _on(target, pnames, req, res, data) {
     }
 
     function _error(code, msg, arg) {
-        let ret = {error: msg};
+        let ret = { errcode: msg };
         if (undefined != arg) {
-            ret.data = arg;
+            ret.errmsg = arg;
         }
         _verbose(msg, utils.stringify(ret));
         try {
             res.status(code).json(ret);
-        }
-        catch (e) {
+        } catch (e) {
             console.log(e.stack);
         }
     }
@@ -396,10 +395,17 @@ function _on(target, pnames, req, res, data) {
         } else {
             func.apply(null, params);
         }
-    }
-    catch (e) {
+    } catch (e) {
         console.log(e.stack);
-        _error(500, 'Internal error', 'Error in calling ' + target + ': ' + e);
+        let errcode, errmsg;
+        if(e instanceof assert.AssertionError) {
+          errcode = e.code;
+          errmsg = e.message;
+        } else {
+          errcode = 'Internal error';
+          errmsg = 'Error in calling ' + target + ': ' + e;
+        }
+        _error(500, errcode, errmsg);
     }
 }
 
@@ -469,8 +475,7 @@ function call(funcname, params, callback) {
     try {
         let func = pnames[0];
         func.apply(null, params);
-    }
-    catch (e) {
+    } catch (e) {
         console.log(e.stack);
         callback('Internal error', 'Error in calling ' + funcname + ': ' + e);
     }
@@ -511,8 +516,8 @@ function setup(pm, what, basedir, limit, nodefault) {
 
             let file = basedir + '/public/favicon.ico';
             res.sendFile(file, {}, function (err, arg) {
-                if (null != err)
-                    console.log('cannot find file: ', file);
+                // if (null != err)
+                    //console.log('cannot find file: ', file);
             });
         });
 

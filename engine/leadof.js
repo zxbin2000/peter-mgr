@@ -16,7 +16,7 @@ function onTimeout(self) {
 }
 
 function extendTimer(self) {
-    if (self.ttl<0 && self.timer) {
+    if (self.ttl < 0 && self.timer) {
         clearTimeout(self.timer);
         self.timer = setTimeout(onTimeout, Math.abs(self.ttl), self);
     }
@@ -60,8 +60,7 @@ Leadof.prototype.run = function () {
                 self.timer = setTimeout(onTimeout, Math.abs(self.ttl), self);
                 break;
             }
-        }
-        else {
+        } else {
             self.loading = undefined;
         }
         for (let x in self.waiting) {

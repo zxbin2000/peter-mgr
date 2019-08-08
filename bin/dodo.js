@@ -20,7 +20,6 @@ try {
     DataStructure = require('../data_structure/_index');
     Exec = require('../utils/exec');
 } catch (e) {
-    console.log('====', e);
     let _peter = require('peter-mgr');
     peter = _peter.createManager();
     index = _peter.Index;
@@ -233,8 +232,7 @@ function prepareExit(code) {
             return _onExit(function () {
                 process.exit(code);
             });
-        }
-        catch (e) {}
+        } catch (e) {}
     }
     process.exit(code);
 }
