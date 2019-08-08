@@ -169,7 +169,6 @@ describe('Peter', function() {
         should.exist(args.details);
         return peter.createAsync('@UserSession', { openid: 'test-openid' });
       }).then(args => {
-        console.log('args=', args, user_id);
         return peter.setAsync(args, { user_id: user_id });
       }).then(args => {
         should.equal(args.n, 1);
@@ -203,7 +202,7 @@ describe('Peter', function() {
   });
 
   describe('#findOneAndUpdate()', function() {
-    it.only('单测 findOneAndUpdate 方法', function() {
+    it('单测 findOneAndUpdate 方法', function() {
       let nval = { avatar: 'default', gender: "1", real_name: 'test-find-update' };
       return peter.findOneAndUpdateAsync('@User', { 
         real_name: user.real_name

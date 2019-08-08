@@ -5,7 +5,7 @@
 =>  {{
     let self = this;
     if (self.db) {
-        $callback 'Already bound' null
+        $callback null 'Already bound'
     }
     let opts = options || {};
     opts.useNewUrlParser = true;

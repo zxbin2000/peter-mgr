@@ -11,9 +11,10 @@ let con = concurrent.create(200, 'Mongo Op');
 function runMongoCmd(collection, cmd) {
     let args = Array.prototype.slice.call(arguments);
     let callback = args.pop();
-    assert('function' == typeof callback);
-    let func = args[1];
 
+    assert('function' === typeof callback, 'Invalid callback');
+    
+    let func = args[1];
     function callback_or_retry(err, arg) {
         if (null == err) {
             return callback(null, arg);
@@ -54,10 +55,15 @@ function runMongoCmd(collection, cmd) {
 }
 
 function add(collection, docid, name, value, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(name)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let inc = {};
     inc[name] = value;
-
     runMongoCmd(collection, collection.findOneAndUpdate,
         {_id: docid},
         {$inc: inc},
@@ -68,14 +74,27 @@ function add(collection, docid, name, value, callback) {
 }
 
 function create(collection, json, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(json)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
     
     runMongoCmd(collection, collection.insertOne, json, callback);
 }
 
 // fields can be an attribute name or an array of attributes
 function get(collection, docid, fields, callback) {
-    assert(callback);
+    if(typeof fields === 'function') {
+        callback = fields;
+        fields = undefined;
+    }
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let query = {}
         , proj = {}
         , array = false;
@@ -121,12 +140,21 @@ function get(collection, docid, fields, callback) {
 }
 
 function manyGet(collection, docids, fields, callback) {
-    assert(callback);
+    if(typeof fields === 'function') {
+        callback = fields;
+        fields = undefined;
+    }
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docids)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let query = {}
         , proj = {}
         , array = false;
 
-    query['_id'] = {$in: docids};
+    query['_id'] = { $in: docids };
     switch (typeof fields) {
     case 'undefined':
         array = true;
@@ -169,75 +197,23 @@ function manyGet(collection, docids, fields, callback) {
     });
 }
 
-function getMany(collection, docids, fields, callback) {
-    assert(callback);
-    let query = {}
-        , proj = {}
-        , array = false;
-
-    let map = {};
-    for (let x in docids) {
-        let id = docids[x];
-        if (map[id]) {
-            map[id].push(+x);
-        }
-        else {
-            map[id] = [+x];
-        }
-    }
-    query['_id'] = {$in: docids};
-    switch (typeof fields) {
-    case 'undefined':
-        array = true;
-        break;
-
-    case 'object':
-        for (let x in fields) {
-            proj[fields[x]] = 1;
-        }
-        array = true;
-        break;
-
-    case 'string':
-        proj[fields] = 1;
-        break;
-
-    default:
-        assert(false, "wrong type of fields");
-        break;
-    }
-
-    let cursor = collection.find(query, proj);
-    runMongoCmd(cursor, cursor.toArray, function (err, arg) {
-        if (null != err)
-            return callback(err, arg);
-        if (null == arg)
-            return callback("Not existing", null);
-
-        let res = [];
-        for (let x in arg) {
-            let obj = array
-                    ? arg[x]
-                    : (arg[x].hasOwnProperty(fields) ? arg[x][fields] : null);
-
-            let ords = map[arg[x]._id];
-            for (let i in ords) {
-                res[ords[i]] = obj;
-            }
-        }
-        callback(null, res);
-    });
-}
-
 function set(collection, docid, json, options, callback) {
-    assert(callback);
+    if(typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let cond;
     if (options.cond) {
         cond = options.cond;
         cond._id = docid;
         delete options.cond;
-    }
-    else {
+    } else {
         cond = {_id: docid};
     }
     runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
@@ -250,10 +226,20 @@ function set(collection, docid, json, options, callback) {
 }
 
 function replace(collection, docid, name, json, options, callback) {
-    assert(callback);
-    let cond = {_id: docid};
+    if(typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(name)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
-    cond[name] = {$exists: true};
+    let cond = {_id: docid};
+    cond[name] = { $exists: true };
+
     runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
@@ -264,11 +250,20 @@ function replace(collection, docid, name, json, options, callback) {
 }
 
 function insert(collection, docid, name, json, options, callback) {
-    assert(callback);
-    let cond = { _id: docid };
+    if(typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(name)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
-    cond[name] = {$exists: false};
-    runMongoCmd(collection, collection.updateOne, cond, {$set: json}, options, function (err, arg) {
+    let cond = { _id: docid };
+    cond[name] = { $exists: false };
+    runMongoCmd(collection, collection.updateOne, cond, { $set: json }, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -278,8 +273,12 @@ function insert(collection, docid, name, json, options, callback) {
 }
 
 function remove(collection, docid, fields, callback) {
-    assert(fields);
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(fields)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
     let cond = {_id: docid};
     let unset = {};
@@ -309,7 +308,12 @@ function remove(collection, docid, fields, callback) {
 }
 
 function pushList(collection, docid, listname, elem, callback) {
-    assert(callback, 'callback cannot be null.');
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(listname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
     let cond = {}, add = {};
     cond['_id'] = docid;
@@ -323,8 +327,14 @@ function pushList(collection, docid, listname, elem, callback) {
 }
 
 function pushMap(collection, docid, setname, keyname, elem, callback) {
-    assert(callback, 'callback cannot be null.');
-    assert(elem.hasOwnProperty(keyname), `elem.hasOwnProperty(${keyname})`);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && !utils.isNull(keyname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+    assert(elem.hasOwnProperty(keyname), `elem han't: ${keyname}.`);
 
     let setwithkey = setname + '.' + keyname
         , cond = {}
@@ -343,7 +353,12 @@ function pushMap(collection, docid, setname, keyname, elem, callback) {
 }
 
 function pushSet(collection, docid, setname, elem, callback) {
-    assert(callback, 'callback cannot be null.');
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
     let cond = {}, add = {};
     cond['_id'] = docid;
@@ -352,9 +367,13 @@ function pushSet(collection, docid, setname, elem, callback) {
     runMongoCmd(collection, collection.updateOne, cond, { $addToSet: add }, callback);
 }
 
-// first is default to false
 function pop(collection, docid, setname, first, callback) {
-    assert(callback, 'callback cannot be null.');
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
     let cond = {}
         , update = {}
@@ -382,8 +401,14 @@ function pop(collection, docid, setname, first, callback) {
 
 //replaceAll means to replace the whole element, otherwise only replace the attributes specified in $elem
 function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callback) {
-    assert(callback);
-    assert(elem.hasOwnProperty(keyname), 'elem.hasOwnProperty(keyname)');
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && !utils.isNull(keyname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+    assert(elem.hasOwnProperty(keyname), `elem han't: ${keyname}.`);
 
     let setwithkey = setname + '.' + keyname
         , cond = {}
@@ -410,7 +435,13 @@ function replaceMap(collection, docid, setname, keyname, elem, replaceAll, callb
 }
 
 function replaceSet(collection, docid, setname, old, _new, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let cond = {}
         , update = {};
 
@@ -428,7 +459,13 @@ function replaceSet(collection, docid, setname, old, _new, callback) {
 }
 
 function removeSet(collection, docid, setname, value, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let cond = {}
         , update = {};
 
@@ -447,7 +484,14 @@ function removeSet(collection, docid, setname, value, callback) {
 
 //replaceAll means to replace the whole element, otherwise only replace the attributes specified in $elem
 function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(setname)
+        && !utils.isNull(keyname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let setwithkey = setname + '.' + keyname
         , cond = {}
         , update = {}
@@ -469,7 +513,13 @@ function removeMap(collection, docid, setname, keyname, keyvalue, callback) {
 
 //replaceAll means to replace the whole element, otherwise only replace the attributes specified in $elem
 function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(cont)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let cond = {}
       , update = {};
 
@@ -477,15 +527,14 @@ function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callba
     let setname = cont + '.' + index;
     if (replaceAll) {
         update[setname] = elem;
-    }
-    else {
+    } else {
         for (let x in elem) {
             if (x != keyname)
                 update[setname + '.' + x] = elem[x];
         }
     }
 
-    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $set: update }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
@@ -494,9 +543,15 @@ function replaceByIndex(collection, docid, cont, index, elem, replaceAll, callba
     });
 }
 
-// cond: {name : value}
 function getElementsByCond(collection, docid, listname, cond, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(listname)
+        && !utils.isNull(cond)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let query = {}
         , proj = {};
 
@@ -515,7 +570,14 @@ function getElementsByCond(collection, docid, listname, cond, callback) {
 
 // cond: {name : value}
 function removeElementsByCond(collection, docid, listname, cond, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(listname)
+        && !utils.isNull(cond)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     let query = {}
         , update = {};
 
@@ -533,11 +595,13 @@ function removeElementsByCond(collection, docid, listname, cond, callback) {
     });
 }
 
-
-// range: [from, number]
 function getElementsByRange(collection, docid, listname, range, callback) {
-    assert(callback);
-    assert(range instanceof Array);
+    assert(!utils.isNull(collection)
+        && !utils.isNull(docid)
+        && !utils.isNull(listname)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
 
     let query = {}
         , proj = {};
@@ -563,7 +627,7 @@ function find(collection, query, options, callback) {
     }
     assert(!utils.isNull(collection)
         && !utils.isNull(query)
-        && (!utils.isNull(options) || !utils.isNull(callback))
+        && (!utils.isNull(options) || utils.isFunction(callback))
         , "Wrong parameters in query"
     );
 
@@ -574,18 +638,20 @@ function find(collection, query, options, callback) {
 function findOne(collection, filter, options, callback) {
     assert(!utils.isNull(collection)
         && !utils.isNull(filter)
-        && (!utils.isNull(options) || !utils.isNull(callback))
+        && (!utils.isNull(options) || utils.isFunction(callback))
         , "Wrong parameters in query"
     );
+
     runMongoCmd(collection, collection.findOne, filter, options, callback);
 }
 
 function findOneAndUpdate(collection, filter, update, options, callback) {
     assert(!utils.isNull(collection) 
         && !utils.isNull(filter) 
-        && (!utils.isNull(update) || !utils.isNull(callback)) 
+        && (!utils.isNull(update) || utils.isFunction(callback)) 
         , "Wrong parameters in query"
     );
+
     runMongoCmd(collection, collection.findOneAndUpdate, filter, update, options, function (err, arg) {
         callback(err, null == err ? arg.value : arg);
     });
@@ -594,9 +660,10 @@ function findOneAndUpdate(collection, filter, update, options, callback) {
 function findOneAndDelete(collection, filter, options, callback) {
     assert(!utils.isNull(collection) 
         && !utils.isNull(filter)
-        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        && (!utils.isNull(options) || utils.isFunction(callback)) 
         , "Wrong parameters in query"
     );
+
     runMongoCmd(collection, collection.findOneAndDelete, filter, options, function (err, arg) {
         callback(err, null == err ? arg.value : arg);
     });
@@ -606,27 +673,31 @@ function findOneAndReplace(collection, filter, replacement, options, callback) {
     assert(!utils.isNull(collection) 
         && !utils.isNull(filter)
         && !utils.isNull(replacement)
-        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        && (!utils.isNull(options) || utils.isFunction(callback)) 
         , "Wrong parameters in query"
     );
+
     runMongoCmd(collection, collection.findOneAndReplace, filter, replacement, options, function (err, arg) {
         callback(err, null == err ? arg.value : arg);
     });
 }
 
 function destroy(collection, filter, options, callback) {
-    assert('function' == typeof(callback), 'Invalid callback');
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(filter)
+        && (!utils.isNull(options) || utils.isFunction(callback)) 
+        , "Wrong parameters in query"
+    );
 
     runMongoCmd(collection, collection.deleteOne, filter, options, callback);
 }
 
-// cond: [{stage}, {stage}]
 function aggregate(collection, cond, options, callback) {
-    //assert(!utils.isNull(collection)
-    //    && !utils.isNull(cond),
-    //    "Wrong parameters in aggregate"
-    //);
-    assert(callback);
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(cond)
+        && (!utils.isNull(options) || utils.isFunction(callback)) 
+        , "Wrong parameters in query"
+    );
 
     switch (typeof(options)) {
         case 'function':
@@ -643,9 +714,13 @@ function aggregate(collection, cond, options, callback) {
     runMongoCmd(cursor, cursor.toArray, callback);
 }
 
-// cond: { query condition }
 function count(collection, cond, callback) {
-    assert(callback);
+    assert(!utils.isNull(collection) 
+        && !utils.isNull(cond)
+        && utils.isFunction(callback)
+        , "Wrong parameters in query"
+    );
+
     runMongoCmd(collection, collection.countDocuments, cond, callback);
 }
 
@@ -653,9 +728,10 @@ function distinct(collection, field, cond, options, callback) {
     assert(!utils.isNull(collection) 
         && !utils.isNull(field)
         && !utils.isNull(cond)
-        && (!utils.isNull(options) || !utils.isNull(callback)) 
+        && (!utils.isNull(options) || utils.isFunction(callback)) 
         , "Wrong parameters in distinct"
     );
+
     runMongoCmd(collection, collection.distinct, field, cond, options, function (err, arg) {
         callback(err, arg);
     });
@@ -664,11 +740,11 @@ function distinct(collection, field, cond, options, callback) {
 function findCursor(collection, cond, options, callback) {
     assert(!utils.isNull(collection)
         && !utils.isNull(cond)
-        && (!utils.isNull(options) || !utils.isNull(callback))
+        && (!utils.isNull(options) || utils.isFunction(callback))
         , "Wrong parameters in findCursor"
     );
-    let cursor = collection.find(cond, options);
-    callback(null, cursor);
+
+    callback(null, collection.find(cond, options));
 }
 
 module.exports = {
@@ -677,7 +753,6 @@ module.exports = {
     add: add,
     get: get,
     manyGet: manyGet,
-    getMany: getMany,
     find: find,
     findOne: findOne,
     findOneAndUpdate: findOneAndUpdate,

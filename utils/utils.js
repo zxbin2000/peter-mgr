@@ -47,11 +47,15 @@ function stringify(obj) {
     return jsonic.stringify(obj);
 }
 
-function isArray(object){
+function isArray(object) {
     return  object && typeof object==='object' &&    
         typeof object.length==='number' &&  
         typeof object.splice==='function' &&    
         !(object.propertyIsEnumerable('length'));
+}
+
+function isFunction(func) {
+  return typeof func === 'function';
 }
 
 function hasOwn(obj, key) {
@@ -780,6 +784,7 @@ module.exports = {
     translateIntervalString: translateIntervalString,
     translateTimeSpan: translateTimeSpan,
 
+    isFunction: isFunction,
     isArray: isArray,
     isNull: _.isNull,
     isEmpty: _.isEmpty,

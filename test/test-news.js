@@ -7,25 +7,25 @@ describe('Test news', () => {
 
   before(function() {
     return peter.bindDbAsync(config.get('schema')).then(args => {
-      // return peter.createAsync('@User', {
-      //   avatar: 'test-news',
-      //   gender: 0,
-      //   nick_name: 'test-news'
-      // });
+      return peter.createAsync('@User', {
+        avatar: 'test-news',
+        gender: 0,
+        nick_name: 'test-news'
+      });
     }).then(args => {
-      // return peter.createAsync('@News', {
-      //   cover: 'test-news',
-      //   title: 'test-news',
-      //   posted_by: {
-      //     user: args,
-      //     nick: 'test-news',
-      //     avatar: 'test-news'
-      //   },
-      //   n_like: 0,
-      //   n_comment: 0
-      // });
+      return peter.createAsync('@News', {
+        cover: 'test-news',
+        title: 'test-news',
+        posted_by: {
+          user: args,
+          nick: 'test-news',
+          avatar: 'test-news'
+        },
+        n_like: 0,
+        n_comment: 0
+      });
     }).then(args => {
-      // should.exist(args);
+      should.exist(args);
     }).catch(error => {
       console.log('Error: ', error);
       should.not.exist(error);
@@ -61,7 +61,7 @@ describe('Test news', () => {
       })
     });
 
-    it.only('#push to set', () => {
+    it.skip('#push to set', () => {
       let s_user;
       let comment = '5d4a7a960000061468f692fd';
       return peter.findOneAsync('@User', {}).then(args => {
