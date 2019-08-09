@@ -1,12 +1,12 @@
 /**
  * Created by linshiding on 3/10/15.
  */
+let _ = require('lodash');
 let Promise = require('bluebird');
 let Parser = require('./parser');
-let MongoOP = require('./mongoop');
+let MongoOP = Promise.promisifyAll(require('./mongoop'));
 let Engine = require('../engine/engine');
 let assert = require('assert');
-let Thenjs = require('thenjs');
 let utils = require('../utils/utils');
 let ascii = require('../utils/ascii');
 let os = require('os');
@@ -36,21 +36,16 @@ function addSchema(sm, sch, check) {
     sm.SchemaByKey[sch.__key__] = sch;
 }
 
-function genSchemaKey(sm, sch, callback) {
+function genSchemaKey(sm, sch) {
     let key;
-
     if (sm.SchemaByName.hasOwnProperty(sch.__name__)) {
         key = sm.SchemaByName[sch.__name__].__key__;
-        assert(key > 0);
-        return process.nextTick(function () {
-            callback(null, key);
-        });
+        assert(key > 0, `"${sch.__name__}" schema key cannot be ${key}.`);
+        return new Promise(resolve => resolve(key));
     }
 
-    Thenjs(function (cont) {
-        // generate a unique key
-        MongoOP.add(sm.collection, 0, 'lastkey', 1, cont);
-    }).then(function (cont, arg) {
+    // generate a unique key
+    return MongoOP.addAsync(sm.collection, 0, 'lastkey', 1).then(arg => {
         key = arg.lastkey;
         let elem = {
             name: sch.__name__,
@@ -60,59 +55,59 @@ function genSchemaKey(sm, sch, callback) {
             id: 0
         };
         // try to set key of this schema
-        MongoOP.pushMap(sm.collection, 0, 'schema', 'name', elem, true, cont);
-    }).then(function (cont, arg) {
-        callback(null, key);
-    }, function (cont, err) {
-        if (err == 'Already existed') {
-            MongoOP.getElementsByCond(sm.collection, 0, 'schema', {name: sch.__name__}, cont);
-        } else {
-            callback(err, 0);
+        return MongoOP.pushMapAsync(sm.collection, 0, 'schema', 'name', elem);
+    }).catch(err => {
+        if (err.message == 'Already existed') {
+            return MongoOP.getElementsByCondAsync(sm.collection, 0, 'schema', { 
+                name: sch.__name__ 
+            }).then(args => {
+                _.each(args, item => {
+                    if(item.name === sch.__name__) {
+                        key = item.key;
+                    }
+                });
+                return new Promise(resolve => resolve(key));
+            });
         }
-    }).then(function (cont, arg) {
-        key = arg[0].key;
+        return new Promise(resolve => resolve(0) );
+    }).then(arg => {
         // TODO: update local schema from the DB, then we can check the compatibility
-        callback(null, key);
+        return new Promise(resolve => resolve(key) );
+    }).catch(err => {
+        throw err;
     });
 }
 
 function _checkChange(sm, sch, callback) {
-    Thenjs(function(cont) {
-        MongoOP.getElementsByCond(sm.collection, 0, 'schema', { name: sch.__name__ }, cont);
-    }).then(function(cont, arg) {
+    return MongoOP.getElementsByCondAsync(sm.collection, 0, 'schema', { 
+        name: sch.__name__ 
+    }).then(args => {
         let sm_id;
-        for(let i = 0; i < arg.length; i++) {
-          if(arg[i] && arg[i]['name'] === sch.__name__) {
-            sm_id = arg[i]['id'];
-            break;
-          }
+        for(let i = 0; i < args.length; i++) {
+            if(args[i] && args[i]['name'] === sch.__name__) {
+                sm_id = args[i]['id'];
+                break;
+            }
         }
         if(typeof sm_id !== 'number' || sm_id <= 0) {
-            return process.nextTick(function () {
-                callback(null, true);
-            });
-        } else {
-          MongoOP.get(sm.collection, sm_id, {}, cont);
+            return true;
         }
-    }).then(function(cont, arg) {
-        let _str_db = arg.str && arg.str.replace(/\s+/g, '');
+        return MongoOP.getAsync(sm.collection, sm_id);
+    }).then(args => {
+        let _str_db = args.str && args.str.replace(/\s+/g, '');
         let _str_ = sch.__str__ && sch.__str__.replace(/\s+/g, '');
-        return process.nextTick(function () {
-          callback(null, _str_db === _str_ ? false : true);
-        });
-    }).fail(function(cont, err) {
-        return process.nextTick(function () {
-            callback(null, 'No change');
-        });
+        return _str_db === _str_ ? false : true;
+    }).catch(error => {
+        return false;
     });
 }
 
 let qUpdating = [];
-function updateSchema(sm, sch, callback) {
+function updateSchema(sm, sch) {
     assert(!sch.hasOwnProperty('_id') && !sch.hasOwnProperty('__key__'));
 
     sch['__time__'] = new Date(Date.now());
-    if (qUpdating.push([sch, callback]) > 1) {    // an update is in progress
+    if (qUpdating.push([sch]) > 1) {    // an update is in progress
         return;
     }
 
@@ -121,50 +116,51 @@ function updateSchema(sm, sch, callback) {
         if (x == undefined)
             return;
         sch = x[0];
-        callback = x[1];
 
-        Thenjs(function (cont) {
-            _checkChange(sm, sch, cont);
-        }).then(function(cont, changed) {
+        return _checkChange(sm, sch).then(changed => {
             if(typeof changed === 'boolean' && !changed) {
-                return process.nextTick(function () {
-                    callback(null, sch.__name__ + ' no change.');
-                });
+                _runUpdateQ();
             } else {
-              genSchemaKey(sm, sch, cont);
+              return _runAddSchema(sm, sch);
             }
-        }).then(function (cont, arg) {
-            sch.__key__ = arg;
-            MongoOP.add(sm.collection, 0, 'lastid', 1, cont);
-        }).then(function (cont, arg) {
+        }).then(args => {
+            _runUpdateQ();
+            return sch;
+        }).catch(err => {
+            console.log('Error: ', err);
+        });
+    }
+
+    function _runAddSchema(sm, sch) {
+      return genSchemaKey(sm, sch).then(arg => {
+          sch.__key__ = arg;
+          return MongoOP.addAsync(sm.collection, 0, 'lastid', 1);
+        }).then(arg => {
             sch._id = arg.lastid;
             //console.log("name: %s, key: %d, id: %d", sch.__name__, sch.__key__, sch._id);
-            sm.collection.insertOne({
+            return MongoOP.createAsync(sm.collection, {
                 _id: sch._id,
                 name: sch.__name__,
                 key: sch.__key__,
                 time: sch.__time__,
                 who: sch.__who__,
                 str: sch.__str__
-            }, cont);
-        }).then(function (cont, arg) {
-            MongoOP.replaceMap(sm.collection, 0, 'schema', 'name',
-                { name: sch.__name__, id: sch._id, who: sch.__who__, time: sch.__time__ },
-                false, cont);
-        }).then(function (cont, arg) {
+            });
+        }).then(arg => {
+            return MongoOP.replaceMapAsync(sm.collection, 0, 'schema', 'name',
+                { name: sch.__name__, key: sch.__key__, id: sch._id, who: sch.__who__, time: sch.__time__ },
+                true
+            );
+        }).then(arg => {
             addSchema(sm, sch, false);
-            callback(null, sch);
-
-            _runUpdateQ();
-        }).fail(function (cont, err, result) {
-            console.log("%s", err.stack);
-            callback(err, null);
-
-            _runUpdateQ();
+            return sch;
+        }).catch(error => {
+            console.log("%s", error.stack);
+            throw error;
         });
     }
 
-    _runUpdateQ();
+    return _runUpdateQ();
 }
 
 function update(data, who, callback) {
@@ -199,13 +195,13 @@ function update(data, who, callback) {
         });
     }
 
-    Thenjs().eachSeries(q, function(cont, item) {
-      updateSchema(self, item, cont);
-    }).then(function(cont, args) {
+    Promise.all(_.map(q, item => {
+        return updateSchema(self, item);
+    })).then(args => {
         return process.nextTick(function () {
             callback(null, args);
         });
-    }).fail(function(cont, error) {
+    }).catch(error => {
         console.log('Error: ', error);
         return process.nextTick(function () {
             callback('Update error', null);
@@ -406,13 +402,11 @@ function commandForMonitor(arg, rl) {
             sch = _whichSchema(cmd);
             if (undefined != sch) {
                 _printSchemaStr(sch);
-            }
-            else if (cmd == 'all') {
+            } else if (cmd == 'all') {
                 for (let x in self.SchemaByKey) {
                     _printSchemaStr(self.SchemaByKey[x]);
                 }
-            }
-            else {
+            } else {
                 console.log("Unknown command: %s", cmd);
             }
             break;

@@ -12,7 +12,7 @@
     MongoOP.get self.collection 0 'schema'
 =>  {{
     function readEachSchema(each, callback) {
-        assert(each.id);
+        assert(each.id, 'schema "' + each.name + '" id cannot be 0.');
 
         $return MongoOP.get self.collection each.id null
         <=  {{

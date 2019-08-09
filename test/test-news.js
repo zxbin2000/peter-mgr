@@ -79,10 +79,7 @@ describe('Test news', () => {
         s_user = args;
         return peter.pushAsync(comment, 'read_by', s_user._id);
       }).then(args => {
-        console.log('---pop---', args);
         return peter.removeElementAsync(comment, 'read_by', s_user._id);
-      }).then(args => {
-        console.log('--remove--', args);
       }).catch(error => {
         console.log('Error: ', error);
         should.not.exist(error);

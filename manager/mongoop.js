@@ -66,8 +66,10 @@ function add(collection, docid, name, value, callback) {
     runMongoCmd(collection, collection.findOneAndUpdate,
         { _id: docid },
         { $inc: inc },
-        { returnOriginal: true },
-        (err, arg) => { callback(err, arg.ok ? arg.value : arg); }
+        { returnOriginal: false },
+        (err, arg) => {
+          callback(err, arg.ok ? arg.value : arg); 
+        }
     );
 }
 
@@ -340,11 +342,12 @@ function pushMap(collection, docid, setname, keyname, elem, callback) {
     cond['_id'] = docid;
     add[setname] = elem;
 
-    runMongoCmd(collection, collection.updateOne, cond, { $push: add }, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $push: add }, { returnOriginal: false }, function (err, arg) {
         if (null === err && (arg.result && arg.result.nModified) === 0) {
             return callback("Already existed", null);
         }
-        return callback(null, arg);
+
+        return callback(null, arg.result ? arg.result : arg);
     });
 }
 
@@ -381,8 +384,8 @@ function pop(collection, docid, setname, first, callback) {
     fields[setname] = 1;
     
     runMongoCmd(collection, collection.findOneAndUpdate, cond, { $pop: update }, { 
-      projection: fields,
-      returnOriginal: false
+        projection: fields,
+        returnOriginal: false
     }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
