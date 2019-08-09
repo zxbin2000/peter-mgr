@@ -28,8 +28,7 @@ function runMongoCmd(collection, cmd) {
                 args.unshift(collection);
                 con.runArgs(args);
             }, 1000);
-        }
-        else if (-1 != str.search('"message":"write EPIPE"')
+        } else if (-1 != str.search('"message":"write EPIPE"')
             || -1 != str.search('"message":"write EIO"')
             || -1 != str.search('"message":"read ECONNRESET"')
             || -1 != str.search('possible socket exception')
@@ -65,12 +64,11 @@ function add(collection, docid, name, value, callback) {
     let inc = {};
     inc[name] = value;
     runMongoCmd(collection, collection.findOneAndUpdate,
-        {_id: docid},
-        {$inc: inc},
-        {upsert: true, returnNewDocument: true, returnOriginal: false},
-        function (err, arg) {
-            callback(err, null == err ? arg.value : arg);
-        });
+        { _id: docid },
+        { $inc: inc },
+        { returnOriginal: true },
+        (err, arg) => { callback(err, arg.ok ? arg.value : arg); }
+    );
 }
 
 function create(collection, json, callback) {
@@ -101,28 +99,26 @@ function get(collection, docid, fields, callback) {
 
     query['_id'] = docid;
     switch (typeof fields) {
-    case 'undefined':
-        array = true;
-        break;
-
-    case 'object':
-        let t = utils.isArray(fields);
-        for (let x in fields) {
-            let k = t ? fields[x] : x;
-            let v = t ? 1 : fields[x];
-            proj[k] = v;
-        }
-        array = true;
-        break;
-
-    case 'string':
-        proj[fields] = 1;
-        break;
-
-    default:
-        assert(false, 'wrong type of fields ' + typeof fields);
-        break;
+        case 'undefined':
+            array = true;
+            break;
+        case 'object':
+            let t = utils.isArray(fields);
+            for (let x in fields) {
+                let k = t ? fields[x] : x;
+                let v = t ? 1 : fields[x];
+                proj[k] = v;
+            }
+            array = true;
+            break;
+        case 'string':
+            proj[fields] = 1;
+            break;
+        default:
+            assert(false, 'wrong type of fields ' + typeof fields);
+            break;
     }
+
     let options = { projection: proj };
     runMongoCmd(collection, collection.findOne, query, options, function (err, arg) {
         if (null != err)

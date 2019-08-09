@@ -71,6 +71,9 @@ describe('Peter', function() {
       }).then(function(args) {
         assert.equal(args.n, 1);
         assert.equal(args.ok, 1);
+      }).catch(error => {
+        console.log('TestError: ', error);
+        assert(error === null);
       });
     });
   });

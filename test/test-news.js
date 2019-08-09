@@ -61,6 +61,17 @@ describe('Test news', () => {
       })
     });
 
+    it('#peter.add 单元测试', () => {
+      return peter.findOneAsync('@News').then(args => {
+        return peter.addAsync('5d4a771f0000051261326910', 'n_like');
+      }).then(args => {
+        console.log('===', args);
+      }).catch(error => {
+        console.log('TestError', error);
+        assert(error === null);
+      });
+    });
+
     it.skip('#push to set', () => {
       let s_user;
       let comment = '5d4a7a960000061468f692fd';
