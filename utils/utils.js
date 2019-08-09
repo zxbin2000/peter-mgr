@@ -788,6 +788,8 @@ module.exports = {
     isArray: isArray,
     isNull: _.isNull,
     isEmpty: _.isEmpty,
+    isNumber: _.isNumber,
+    
     cmpObj: cmpObj,
     clear: clear,
     objLen: objLen,

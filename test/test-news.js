@@ -63,28 +63,15 @@ describe('Test news', () => {
 
     it('#peter.add 单元测试', () => {
       return peter.findOneAsync('@News').then(args => {
-        return peter.addAsync('5d4a771f0000051261326910', 'n_like');
+        return peter.increaseAsync(args._id, 'n_like', 2);
       }).then(args => {
-        console.log('===', args);
+        args.n_like.should.be.above(1);
       }).catch(error => {
         console.log('TestError', error);
         assert(error === null);
       });
     });
-
-    it.skip('#push to set', () => {
-      let s_user;
-      let comment = '5d4a7a960000061468f692fd';
-      return peter.findOneAsync('@User', {}).then(args => {
-        s_user = args;
-        return peter.pushAsync(comment, 'read_by', s_user._id);
-      }).then(args => {
-        return peter.removeElementAsync(comment, 'read_by', s_user._id);
-      }).catch(error => {
-        console.log('Error: ', error);
-        should.not.exist(error);
-      });
-    });
+    
   });
 
 });

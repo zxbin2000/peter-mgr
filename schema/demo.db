@@ -1,7 +1,12 @@
 SimpleUser: {                     // 简单用户信息
-  user: @User,                  // 用户 ID
+  user: @User,                    // 用户 ID
   nick: String,                   // 用户昵称
   avatar: String                  // 用户头像
+}
+
+// 空数据集
+@Empty: {
+  name: String                   // 空数据集
 }
 
 // 用户

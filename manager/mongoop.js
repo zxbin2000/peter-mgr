@@ -53,16 +53,17 @@ function runMongoCmd(collection, cmd) {
     con.runArgs(args);
 }
 
-function add(collection, docid, name, value, callback) {
+function increase(collection, docid, name, step, callback) {
     assert(!utils.isNull(collection)
         && !utils.isNull(docid)
         && !utils.isNull(name)
+        && utils.isNumber(step)
         && utils.isFunction(callback)
         , "Wrong parameters in query"
     );
 
     let inc = {};
-    inc[name] = value;
+    inc[name] = step;
     runMongoCmd(collection, collection.findOneAndUpdate,
         { _id: docid },
         { $inc: inc },
@@ -749,7 +750,7 @@ function findCursor(collection, cond, options, callback) {
 module.exports = {
     create: create,
     destroy: destroy,
-    add: add,
+    increase: increase,
     get: get,
     manyGet: manyGet,
     find: find,

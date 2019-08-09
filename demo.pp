@@ -14,6 +14,10 @@
 ;;
 
 ::  /test foo
-=>  peter.findOne '@User'
+=>  {{
+    console.log('====', foo);
+}}
+    peter.findOne '@User'
 <=  null $@
+<-  $?
 ;;

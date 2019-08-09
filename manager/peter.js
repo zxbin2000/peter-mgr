@@ -184,7 +184,7 @@ function createS(name, json, callback) {
     }
     Schema.fillDefault(sch, json);
 
-    MongoOP.add(self.db.collection('_schema'), 0, name, 1, function (err, arg) {
+    MongoOP.increase(self.db.collection('_schema'), 0, name, 1, function (err, arg) {
         if (null != err) {
             return callback(err, arg);
         }
@@ -337,11 +337,11 @@ function get(pid, fields, options, callback) {
     });
 }
 
-function add(pid, name, value, callback) {
+function increase(pid, name, step, callback) {
     let self = this;
-    if ('function' == typeof (value)) {
-        callback = value;
-        value = 1;
+    if ('function' == typeof step) {
+        callback = step;
+        step = 1;
     }
     let ret = _checkSchemaAndCallback(self.sm, pid, name, null, callback);
     if (null == ret)
@@ -349,11 +349,11 @@ function add(pid, name, value, callback) {
     pid = ret[0];
     let attr = ret[1];
 
-    if (attr.__type__!='Integer' && attr.__type__!='Number') {
-        return process.nextTick(callback, name + ' not integer', null);
+    if (attr.__type__ != 'Integer' && attr.__type__ != 'Number') {
+        return process.nextTick(callback, name + ' is not integer.', null);
     }
 
-    return MongoOP.add(_getCollection(self, pid), pid, name, value, callback);
+    return MongoOP.increase(_getCollection(self, pid), pid, name, step, callback);
 }
 
 // fields can be an attribute name or an array of attributes
@@ -1311,12 +1311,17 @@ function find(collName, cond, options, callback) {
 function findOne(collName, cond, options, callback) {
     let self = this;
     let collection = self.db.collection(collName);
+    if ('function' == typeof cond) {
+        callback = cond;
+        cond = {};
+        options = {};
+    }
     if ('function' == typeof options) {
         callback = options;
         options = {};
     }
     MongoOP.findOne(collection, cond, options, function (err, arg) {
-        if (!err && false!=options.unzip) {
+        if (!err && false != options.unzip) {
             let n = 0;
             let sch = self.sm.getByName(collName);
             for (let x in arg) {
@@ -1591,7 +1596,7 @@ Manager.prototype = {
                         // for set: if the value exists, then push
     pop: pop,           // args: pid, container, first (optional, default: false), callback
                         // ret: the element popped
-    add: add,           // args: pid, name, callback
+    increase: increase, // args: pid, name, step, callback
     replaceElementByKey: replaceElementByKey, // args: pid, setname, element, replaceAll (optional), callback
     replaceElement: replaceElement,           // args: pid, setname, old_element, new_element, callback
     replaceElementByIndex: replaceElementByIndex, // args: pid, contname, index, _new, replaceAll (optional), callback
