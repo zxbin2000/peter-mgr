@@ -279,7 +279,7 @@ function remove(collection, docid, fields, callback) {
         , "Wrong parameters in query"
     );
 
-    let cond = {_id: docid};
+    let cond = { _id: docid };
     let unset = {};
     switch (typeof fields) {
       case 'object':
@@ -289,15 +289,15 @@ function remove(collection, docid, fields, callback) {
           break;
 
       case 'string':
-          unset[fields] = '';
+          unset[fields] = 1;
           break;
 
       default:
           assert(false, "wrong type of fields");
           break;
-      }
+    }
 
-    runMongoCmd(collection, collection.updateOne, cond, {$unset: unset}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $unset: unset }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)
@@ -446,10 +446,10 @@ function replaceSet(collection, docid, setname, old, _new, callback) {
         , update = {};
 
     cond['_id'] = docid;
-    cond[setname] = {$in: [old], $ne: _new};
+    cond[setname] = { $in: [old], $ne: _new };
     update[setname + '.$'] = _new;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$set: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $set: update }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg)
@@ -473,7 +473,7 @@ function removeSet(collection, docid, setname, value, callback) {
     cond[setname] = value;
     update[setname] = value;
 
-    runMongoCmd(collection, collection.updateOne, cond, {$pull: update}, function (err, arg) {
+    runMongoCmd(collection, collection.updateOne, cond, { $pull: update }, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (0 == arg.result.nModified)

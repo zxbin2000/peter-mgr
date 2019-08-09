@@ -1285,6 +1285,11 @@ function command4Monitor(arg, rl) {
 function find(collName, cond, options, callback) {
     let self = this;
     let collection = self.db.collection(collName);
+    if ('function' === typeof cond) {
+        callback = cond;
+        cond = {};
+        options = {};
+    }
     if ('function' === typeof options) {
         callback = options;
         options = {};

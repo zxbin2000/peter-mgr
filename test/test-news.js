@@ -32,6 +32,19 @@ describe('Test news', () => {
     });
   });
 
+  after(() => {
+    return peter.findAsync('@News').then(args => {
+      return Promise.all(args.map(item => {
+        return peter.destroyAsync(item._id);
+      }));
+    }).then(args => {
+      args.length.should.be.above(0);
+    }).catch(error => {
+      console.log('Error', error);
+      assert.equal(error, null);
+    });
+  });
+
   describe('#news', () => {
     it('#add comment', () => {
       let user, news;
