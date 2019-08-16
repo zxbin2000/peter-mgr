@@ -325,13 +325,13 @@ function get(pid, fields, options, callback) {
     pid = _checkPid(self.sm, pid, callback);
     if (null == pid)
         return;
+
     MongoOP.get(_getCollection(self, pid), pid, fields, function (err, arg) {
         if (null == err) {
             unzipAny(self.sm.getByKey(pid.getSchemaKey()), arg, options, callback);
+        } else if(err === 'Not existing' || err === 'No such fields') {
+            callback(null, null);
         } else {
-            if (options.graceful && ('Not existing'==err || 'No such fields'==err)) {
-                return callback(null, null);
-            }
             callback(err, arg);
         }
     });

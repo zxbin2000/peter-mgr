@@ -121,14 +121,13 @@ function get(collection, docid, fields, callback) {
             assert(false, 'wrong type of fields ' + typeof fields);
             break;
     }
-
     let options = { projection: proj };
+
     runMongoCmd(collection, collection.findOne, query, options, function (err, arg) {
         if (null != err)
             return callback(err, arg);
         if (null == arg)
             return callback("Not existing", null);
-
         if (array)
             return callback(null, arg);
 

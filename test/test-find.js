@@ -19,10 +19,18 @@ describe('查询方法单元测试', () => {
 
   it('#get', () => {
     return peter.getAsync(1).then(args => {
-      console.log(args);
+      assert.equal(args, null);
     }).catch(error => {
       assert.equal(error.name, 'Error');
       assert.equal(error.message, "Invalid pid '1' provided");
+      return peter.createAsync('@User', { avatar: 'test-avatar', gender: 0 });
+    }).then(args => {
+      return peter.getAsync(args, ['details', 'avatar']);
+    }).then(args => {
+      assert.equal(args.avatar, 'test-avatar');
+      assert.equal(args.detail, null);
+    }).catch(error => {
+      assert.equal(error, null);
     });
   });
 
