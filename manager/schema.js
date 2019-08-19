@@ -45,7 +45,7 @@ function genSchemaKey(sm, sch) {
     }
 
     // generate a unique key
-    return MongoOP.addAsync(sm.collection, 0, 'lastkey', 1).then(arg => {
+    return MongoOP.increaseAsync(sm.collection, 0, 'lastkey', 1).then(arg => {
         key = arg.lastkey;
         let elem = {
             name: sch.__name__,
@@ -134,7 +134,7 @@ function updateSchema(sm, sch) {
     function _runAddSchema(sm, sch) {
       return genSchemaKey(sm, sch).then(arg => {
           sch.__key__ = arg;
-          return MongoOP.addAsync(sm.collection, 0, 'lastid', 1);
+          return MongoOP.increaseAsync(sm.collection, 0, 'lastid', 1);
         }).then(arg => {
             sch._id = arg.lastid;
             //console.log("name: %s, key: %d, id: %d", sch.__name__, sch.__key__, sch._id);
