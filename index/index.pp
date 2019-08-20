@@ -19,8 +19,11 @@
 =>  {{
     peter = pm;
 }}
-    peter.get '@System::Index.1' '[groups]'
+    peter.get '@System::Index.1' 'groups'
 <=  {{
+    if($@ === null) {
+      $callback null groups
+    }
     groups = array2Map($@, 'name', 'id');
 }}
     null groups

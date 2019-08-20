@@ -221,7 +221,7 @@ function _procUpdate(sm, arg) {
                 console.log("Update succeeded!");
                 for (let x in arg) {
                     console.log("Name: %s, Key: %d, Id: %d, Time: %s",
-                        x, arg[x].__key__, arg[x]._id, timeString(arg[x].__time__));
+                        arg[x].__name__, arg[x].__key__, arg[x]._id, timeString(arg[x].__time__));
                 }
             }
             else {

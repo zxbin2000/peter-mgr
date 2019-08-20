@@ -2,11 +2,11 @@
 
 let peter, index, schema, utils;
 try {
-    peter = require('../manager/peter').createManager();
+    peter = require('../index').getManager();
     index = require('../index/index');
     utils = require('../utils/utils');
 } catch (e) {
-    let _peter = require('peter');
+    let _peter = require('peter-mgr');
     peter = _peter.createManager();
     index = _peter.Index;
     utils = _peter.Utils;
