@@ -397,15 +397,15 @@ function _on(target, pnames, req, res, data) {
         }
     } catch (e) {
         console.log(e.stack);
-        let errcode, errmsg;
+        let code, msg;
         if(e instanceof assert.AssertionError) {
-          errcode = e.code;
-          errmsg = e.message;
+          code = e.code;
+          msg = e.message;
         } else {
-          errcode = 'Internal error';
-          errmsg = 'Error in calling ' + target + ': ' + e;
+          code = 'Internal error';
+          msg = 'Error in calling ' + target + ': ' + e;
         }
-        _error(500, errcode, errmsg);
+        _error(500, code, msg);
     }
 }
 
