@@ -244,9 +244,10 @@ function _on(target, pnames, req, res, data) {
     }
 
     function _error(code, msg, arg) {
-        let ret = { code: msg };
+        let ret = { code: msg, errcode: msg };
         if (undefined != arg) {
-            ret.msg = arg;
+            ret.data = arg;
+            ret.errmsg = arg;
         }
         _verbose(msg, utils.stringify(ret));
         try {

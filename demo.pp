@@ -1,4 +1,4 @@
-##  $conf { port: 8000 }
+##  $conf { port: 8080 }
 ##  $verbose ['url']
 ##  $save 0
 
@@ -14,10 +14,5 @@
 ;;
 
 ::  /test foo
-=>  {{
-    console.log('====', foo);
-}}
-    peter.findOne '@User'
-<=  null $@
-<-  $?
+<=  error message
 ;;
