@@ -174,7 +174,7 @@ function manyGet(collection, docids, fields, callback) {
         break;
     }
 
-    let cursor = collection.find(query, proj);
+    let cursor = collection.find(query, { projection: proj });
     runMongoCmd(cursor, cursor.toArray, function (err, arg) {
         if (null != err)
             return callback(err, arg);
