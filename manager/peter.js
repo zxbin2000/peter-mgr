@@ -1613,11 +1613,6 @@ Manager.prototype = {
     getElementByIndex: getElementByIndex,     // TODO:
     getElementsByRange: getElementsByRange,   // args: pid, cont_name, range:[from, number], callback
 
-    link: link,         // args: pid1, pid2, linkname, att1 (optional), att2 (optional), callback
-    isLinked: isLinked, // args: pid1, pid2, linkname, callback
-    unlink: unlink,     // args: pid1, pid2, linkname, callback
-    getLinks: getLinks, // args: pid1, linkname, callback
-
     aggregate: aggregate,   // args: collName, cond, option, callback
     count: count,           // args: collName, cond, callback
     distinct: distinct,     // args: collName, field, cond, options, callback

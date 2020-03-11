@@ -2,74 +2,58 @@
 
 ## Install
 
-npm install git://github.com/zxbin2000/peter-mgr.git#v2.5.0
+npm install git://github.com/zxbin2000/peter-mgr.git#v2.5.1
 
 ## Using Peter
 
-var peterMgr = require('peter').getManager('key');
-
-# Peter Language Grammar
-
-FILE ::= [ CODE | RULE ]+
-
-CODE ::= {{ MULTILINE }}
-
-RULE ::= :: LINE
-        [ ** LINE ]+
-        CHAINS
-
-CHAINS ::= [ CHAIN ]+
-           [ FINAL ]
-            ;;
-
-CHAIN ::= [ SUCC | RETOK ]
-          [ FAIL | RETERR ]
-
-SUCC ::= => [ {{ EMBED }} ] [ LINE ]
-
-RETOK ::= <= [ {{ EMBED }} ] LINE
-
-RETERR ::= <- [ {{ EMBED }} ] LINE
-
-FAIL ::= -> {{ EMBED }}
-
-FINAL ::= <-- [ {{ EMBED }} ] LINE
-
-EMBED ::= [ LINE ] | [ LINE CHAINS ]
-
-# Release Notes
-
-## 2016-08-19 v1.1.1
-* 增加 count 函数，参数：collName, condition，返回符合条件的记录条数
-
-## 2016-09-30 v1.1.2
-* 增加定时启动 pp 的方法，启动命令格式如下，定时启动参数使用 cron 表达式
 ```
-dodo -t "*/2, *, *, *, *" scripts.pp
+文件引入：
+
+let peter = require('peter').getManager('key');
+let db_url = require('config').get('schema');
+
+peter.bindDb(db_url, function() { 
+  console.log('mongodb connected...') 
+});
+
+更新 Schema 操作：
+
+$ npm run monitor
+$ schema update schema/db.schema
+
 ```
 
-### 2016-10-20 v1.1.3
-* 增加 findAndModify 函数，参数：collName, filter, update 返回需要修改的记录
+## 版本说明
 
-### 2016-10-20 v1.1.4
-* 增加 findAndModify 兼容性
+### v2.5.1 2020-03-11
 
-### 2017-02-09 v1.1.5
-* 增加 findAndModify 兼容性
+* Mongodb NodeJS Driver 更新至 v3.2.7 版本；
+* 删除 Thenjs 依赖，增加 Promise 支持；
+* schema update 操作增加变更判断逻辑，仅在 schema 有变化时，才更新数据库；
+* schema 对集合定义使用的 "[", "]" 符号，仅作为逻辑层描述符号，存储层不再体现，方便业务层操作；
+* 统一配置文件，约定使用 config 配置中 "schema" 属性来作为数据库链接；
+* 统一 manyGet 操作表现，删除 getMany 方法；
+* 增加 findUnion 操作，用于按照某一字段去重查询操作；
+* 删除 link、unlink、isLinked、getLinks 方法，简化数据链接关系；
 
-### 2017-02-15 v1.1.6
-* 增加 ##BINARY## 下载文件流功能支持
+## Peter 方法使用说明
 
-### 2017-02-20 v1.1.6-02
-* 增加跨域请求支持
+### 方法约定
 
-### 2017-02-23 v1.1.7
-* 增加对多路径 target 功能支持
-* 增加对 cookie-parser 的支持
+1. 所有非 Promise 异步方法，最后一个参数均为 Callback 函数；
+2. Promise 方法约定，原 Peter 方法名后加 “Async” 后缀，即为 Promise 方法；
 
-### 2017-03-17 v1.1.8
-* 合并 new 分支中，对 setcookie 的支持
+例如：
+```
+// 默认 Callback 实现
+peter.create('@User', { name: 'demo' }, function(err, userId) { 
+  console.log(err, userId); 
+});
 
-### 2018-03-09 v1.2.0
-* $include 支持添加文件夹
-* 调用接口 API 时添加自定义过滤器，支持 before 和 async 两种方式
+// 同名 Promise 实现
+peter.createAsync('@User', { name: 'demo' }).then(userId => {
+  console.log('userId = ', userId);
+});
+```
+
+### peter.create 向指定 Collection 中插入新文档

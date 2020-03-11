@@ -1,6 +1,6 @@
 {
   "name": "peter-mgr",
-  "version": "2.5.0-dev",
+  "version": "2.5.1",
   "description": "MongoDB ODM",
   "author": "lishiding <linshiding@aiyunxiao.com>",
   "license": "Apache-2.0",
